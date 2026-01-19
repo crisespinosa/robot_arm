@@ -1,4 +1,16 @@
-﻿using System.Collections;
+﻿/*
+Данный скрипт — клиент Unity для запроса траектории движения робота UR5e у backend-сервера
+(например, планировщик PMP по суставным углам). Он отправляет целевую конфигурацию q_target
+(6 углов в радианах) на HTTP endpoint, получает JSON с траекторией (список точек q(t)),
+а затем воспроизводит траекторию в Unity, применяя каждый набор углов через ApplyJointAngles6.
+
+Ключевые функции:
+- RequestPlanQ(qTargetRad): отправляет запрос на планирование траектории к backend
+- PostPlanQ(...): делает HTTP POST и парсит JSON-ответ
+- PlayTrajectory(...): проигрывает траекторию с настраиваемой скоростью (playbackScale)
+*/
+
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Networking;
@@ -12,44 +24,46 @@ public class Ur5eTrajectoryClientQ : MonoBehaviour
     public string path = "/arm/plan_pmp_q";
 
     [Header("Trajectory params")]
-    public float T = 1.0f;
-    public float dt = 0.02f;
+    public float T = 1.0f;     // total trajectory duration (seconds)
+    public float dt = 0.02f;   // timestep requested from backend (seconds)
 
     [Header("Playback speed")]
     [Tooltip("1 = normal, 2 = 2x slower, 0.5 = 2x faster")]
-    public float playbackScale = 1.0f;
+    public float playbackScale = 1.0f; // scales the wait time between points
 
     [Header("Applier")]
-    public ApplyJointAngles6 applier;
+    public ApplyJointAngles6 applier;  // applies q (rad) to URDF joints
 
-    Coroutine playRoutine;
+    Coroutine playRoutine; // currently running playback coroutine
 
-    // ---------- JSON ----------
+    // ---- JSON DTOs (request/response structures) ----
     [System.Serializable]
     class PlanQRequest
     {
-        public float[] q_target;
-        public float T;
-        public float dt;
+        public float[] q_target; // target joint angles (rad), length 6
+        public float T;          // desired duration
+        public float dt;         // desired timestep
     }
 
     [System.Serializable]
     class TrajPoint
     {
-        public float t;
-        public float[] q;
+        public float t;   // time stamp (seconds)
+        public float[] q; // joint angles at time t (rad), length 6
     }
 
     [System.Serializable]
     class TrajResponse
     {
-        public float dt;
-        public string unit;
-        public List<TrajPoint> trajectory;
+        public float dt;                 // timestep actually used by backend
+        public string unit;              // usually "rad"
+        public List<TrajPoint> trajectory; // list of trajectory points
     }
 
+    // Builds full URL like http://127.0.0.1:8848/arm/plan_pmp_q
     string BuildUrl() => $"http://{serverIP}:{port}{path}";
 
+    // Public entry point: call this from UI / sliders when user sets a target configuration
     public void RequestPlanQ(float[] qTargetRad)
     {
         if (applier == null)
@@ -63,10 +77,11 @@ public class Ur5eTrajectoryClientQ : MonoBehaviour
             return;
         }
 
-        StopPlayback();
-        StartCoroutine(PostPlanQ(qTargetRad));
+        StopPlayback();                    // stop any previous trajectory playback
+        StartCoroutine(PostPlanQ(qTargetRad)); // request a new planned trajectory
     }
 
+    // Stops currently playing trajectory (if any)
     public void StopPlayback()
     {
         if (playRoutine != null)
@@ -76,6 +91,7 @@ public class Ur5eTrajectoryClientQ : MonoBehaviour
         }
     }
 
+    // Coroutine that sends POST request to backend and starts playback on success
     IEnumerator PostPlanQ(float[] qTargetRad)
     {
         string url = BuildUrl();
@@ -107,7 +123,6 @@ public class Ur5eTrajectoryClientQ : MonoBehaviour
         }
 
         string raw = req.downloadHandler.text;
-        // (Opcional) log corto
         Debug.Log("[TrajectoryClientQ] got response, len=" + raw.Length);
 
         TrajResponse resp;
@@ -128,17 +143,19 @@ public class Ur5eTrajectoryClientQ : MonoBehaviour
             yield break;
         }
 
-        playRoutine = StartCoroutine(PlayTrajectory(resp));
+        playRoutine = StartCoroutine(PlayTrajectory(resp)); // start visual playback
     }
 
+    // Plays the received trajectory in Unity by applying each q to the robot
     IEnumerator PlayTrajectory(TrajResponse resp)
     {
         int n = resp.trajectory.Count;
         Debug.Log($"[TrajectoryClientQ] Playing trajectory ({n} points)");
 
+        // Wait time between points (scaled). >0 to avoid zero/negative waiting.
         float wait = resp.dt * Mathf.Max(0.0001f, playbackScale);
 
-        // ✅ Logs para probar si cambian
+        // Minimal debug probes (first/mid/last) to verify that q values change
         var p0 = resp.trajectory[0];
         var pm = resp.trajectory[n / 2];
         var pL = resp.trajectory[n - 1];
@@ -148,24 +165,31 @@ public class Ur5eTrajectoryClientQ : MonoBehaviour
         Debug.Log($"[TrajectoryClientQ] q(last)  = {pL.q[0]:F3}, {pL.q[1]:F3}");
         Debug.Log($"wait = {resp.dt * playbackScale}");
 
+        // Main playback loop
         for (int i = 0; i < n; i++)
         {
             var p = resp.trajectory[i];
             if (p?.q == null || p.q.Length < 6) continue;
 
-            applier.Apply(p.q);
-
+            applier.Apply(p.q); // ApplyJointAngles6 expects radians and converts internally
             yield return new WaitForSeconds(wait);
         }
-        // lock final pose a few times to let physics settle
+
+        // Re-apply final pose a few frames to stabilize the final configuration
         var last = resp.trajectory[resp.trajectory.Count - 1];
         for (int k = 0; k < 10; k++)
         {
             applier.Apply(last.q);
-            yield return null; // one frame
+            yield return null;
         }
 
         playRoutine = null;
         Debug.Log("[TrajectoryClientQ] Playback finished");
     }
 }
+
+
+
+
+
+

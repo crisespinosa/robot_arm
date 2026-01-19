@@ -7,36 +7,38 @@ using Unity.Robotics.UrdfImporter;
 public class Ur5eSliderHandles : MonoBehaviour
 {
     [Header("Six sliders (values in degrees)")]
-    public Slider q1, q2, q3, q4, q5, q6;
+    public Slider q1, q2, q3, q4, q5, q6; // UI sliders store values in degrees
 
     [Header("Texts (TMP) next to sliders (optional)")]
-    public TMP_Text q1Text, q2Text, q3Text, q4Text, q5Text, q6Text;
+    public TMP_Text q1Text, q2Text, q3Text, q4Text, q5Text, q6Text; // optional labels near sliders
 
     [Header("Client that requests PMP trajectory")]
-    public Ur5eTrajectoryClientQ client;
+    public Ur5eTrajectoryClientQ client; // sends q_target (rad) to backend and plays trajectory
 
     [Header("Apply joints in Unity")]
-    public ApplyJointAngles6 applier;
+    public ApplyJointAngles6 applier; // applies joint angles (rad) to URDF joints in Unity
 
     [Header("URDF joints (for reading initial pose)")]
-    public UrdfJointRevolute j1, j2, j3, j4, j5, j6;
+    public UrdfJointRevolute j1, j2, j3, j4, j5, j6; // used only to read initial/home pose from robot
 
     [Header("Behavior")]
     [Tooltip("If true: robot moves immediately while you drag sliders (smooth preview). If false: robot moves ONLY after pressing Send.")]
-    public bool previewInUnity = false;
+    public bool previewInUnity = false; // preview movement while dragging sliders
 
     [Tooltip("If true: set sliders to current robot pose at start (recommended).")]
-    public bool syncSlidersOnStart = true;
+    public bool syncSlidersOnStart = true; // (not used below, but intended as a start behavior flag)
 
     // Home pose (rad)
-    private float[] homeRad = new float[6];
-    private bool homeCaptured = false;
+    private float[] homeRad = new float[6]; // cached home pose in radians
+    private bool homeCaptured = false;      // whether home pose was captured
 
     IEnumerator Start()
     {
+        // Wait a couple of frames so URDF/ArticulationBodies finish initialization
         yield return null;
         yield return null;
 
+        // Initialize sliders from the last applied pose (if available)
         if (applier != null && applier.LastQRad != null && applier.LastQRad.Length >= 6)
         {
             SetSlidersFromRad(applier.LastQRad);
@@ -44,18 +46,17 @@ public class Ur5eSliderHandles : MonoBehaviour
         }
     }
 
-
-    // Conecta esto a OnValueChanged de cada slider
+    // Hook this method to OnValueChanged of each slider
     public void OnSliderChanged()
     {
         UpdateLabels();
 
-        // SOLO si quieres preview fluido
+        // Optional smooth preview: apply immediately while dragging
         if (previewInUnity && applier != null)
             applier.Apply(GetSlidersAsRad());
     }
 
-    // Botón SEND
+    // SEND button: ask backend to plan and play a trajectory to current slider target
     public void SendTarget()
     {
         if (client == null)
@@ -64,20 +65,18 @@ public class Ur5eSliderHandles : MonoBehaviour
             return;
         }
 
-        // Detener reproducción anterior (si existe)
-        client.StopPlayback();
-
-        float[] qRad = GetSlidersAsRad();
-        client.RequestPlanQ(qRad);
+        client.StopPlayback();             // stop any previous trajectory
+        float[] qRad = GetSlidersAsRad();  // convert slider degrees -> radians
+        client.RequestPlanQ(qRad);         // send to backend and start playback
     }
 
-    // Botón RESET
+    // RESET button: stop playback, restore home pose immediately in Unity
     public void ResetPoseImmediate()
     {
         if (client != null) client.StopPlayback();
 
         if (!homeCaptured)
-            CaptureHomePoseFromRobot();
+            CaptureHomePoseFromRobot(); // read home pose once and cache it
 
         SetSlidersFromRad(homeRad);
         UpdateLabels();
@@ -86,6 +85,7 @@ public class Ur5eSliderHandles : MonoBehaviour
             applier.Apply(homeRad);
     }
 
+    // Updates the text labels next to sliders
     public void UpdateLabels()
     {
         if (q1Text) q1Text.text = $"Q1: {q1.value:0.0}°";
@@ -96,9 +96,10 @@ public class Ur5eSliderHandles : MonoBehaviour
         if (q6Text) q6Text.text = $"Q6: {q6.value:0.0}°";
     }
 
+    // Captures a "home" pose from URDF joints (preferred) or falls back to zeros
     void CaptureHomePoseFromRobot()
     {
-        // Si no asignaste j1..j6, no podemos leer pose real
+        // If joints are not assigned, we cannot read real pose -> use zeros
         if (j1 == null || j2 == null || j3 == null || j4 == null || j5 == null || j6 == null)
         {
             Debug.LogWarning("[UI] j1..j6 are not assigned. Home pose will be zeros.");
@@ -108,6 +109,7 @@ public class Ur5eSliderHandles : MonoBehaviour
             return;
         }
 
+        // Read current joint positions (radians) as home
         homeRad[0] = ReadJointRad(j1);
         homeRad[1] = ReadJointRad(j2);
         homeRad[2] = ReadJointRad(j3);
@@ -123,21 +125,22 @@ public class Ur5eSliderHandles : MonoBehaviour
                   $"{homeRad[3] * Mathf.Rad2Deg:0.0}, {homeRad[4] * Mathf.Rad2Deg:0.0}, {homeRad[5] * Mathf.Rad2Deg:0.0}");
     }
 
+    // Reads joint position in radians (ArticulationBody preferred)
     float ReadJointRad(UrdfJointRevolute j)
     {
         if (j == null) return 0f;
 
-        // Mejor opción si URDF usa articulations:
         var ab = j.GetComponent<ArticulationBody>();
         if (ab != null)
-            return ab.jointPosition[0]; // rad
+            return ab.jointPosition[0]; // radians
 
-        // Fallback (puede no coincidir en UR5e):
+        // Fallback: estimate from local Z rotation (may not match UR5e joint axis)
         float z = j.transform.localEulerAngles.z;
         if (z > 180f) z -= 360f;
         return z * Mathf.Deg2Rad;
     }
 
+    // Converts current slider values (degrees) into a 6-element radians array
     float[] GetSlidersAsRad()
     {
         return new float[6]
@@ -151,6 +154,7 @@ public class Ur5eSliderHandles : MonoBehaviour
         };
     }
 
+    // Sets sliders from radians without triggering OnValueChanged callbacks
     void SetSlidersFromRad(float[] qRad)
     {
         if (qRad == null || qRad.Length < 6) return;
@@ -163,3 +167,9 @@ public class Ur5eSliderHandles : MonoBehaviour
         if (q6) q6.SetValueWithoutNotify(qRad[5] * Mathf.Rad2Deg);
     }
 }
+
+
+
+
+
+

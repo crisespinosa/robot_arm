@@ -1,0 +1,109 @@
+{
+  "Version": 1,
+  "WorkspaceRootPath": "C:\\Users\\crist\\Downloads\\UR5e\\",
+  "Documents": [
+    {
+      "AbsoluteMoniker": "D:0:0:{EFCF67BD-9C6B-3546-A0FE-24B7332CEE81}|Assembly-CSharp.csproj|c:\\users\\crist\\downloads\\ur5e\\assets\\ur5esliderhandles.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{EFCF67BD-9C6B-3546-A0FE-24B7332CEE81}|Assembly-CSharp.csproj|solutionrelative:assets\\ur5esliderhandles.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{EFCF67BD-9C6B-3546-A0FE-24B7332CEE81}|Assembly-CSharp.csproj|c:\\users\\crist\\downloads\\ur5e\\assets\\applyjointangles6.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{EFCF67BD-9C6B-3546-A0FE-24B7332CEE81}|Assembly-CSharp.csproj|solutionrelative:assets\\applyjointangles6.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\crist\\Downloads\\UR5e\\Library\\PackageCache\\com.unity.robotics.urdf-importer@90f353e435\\Runtime\\UrdfComponents\\UrdfJoints\\UrdfJointRevolute.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:Library\\PackageCache\\com.unity.robotics.urdf-importer@90f353e435\\Runtime\\UrdfComponents\\UrdfJoints\\UrdfJointRevolute.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{EFCF67BD-9C6B-3546-A0FE-24B7332CEE81}|Assembly-CSharp.csproj|C:\\Users\\crist\\Downloads\\UR5e\\assets\\ur5etrajectoryclientq.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{EFCF67BD-9C6B-3546-A0FE-24B7332CEE81}|Assembly-CSharp.csproj|solutionrelative:assets\\ur5etrajectoryclientq.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{EFCF67BD-9C6B-3546-A0FE-24B7332CEE81}|Assembly-CSharp.csproj|c:\\users\\crist\\downloads\\ur5e\\assets\\keyboardjogsliders.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{EFCF67BD-9C6B-3546-A0FE-24B7332CEE81}|Assembly-CSharp.csproj|solutionrelative:assets\\keyboardjogsliders.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    }
+  ],
+  "DocumentGroupContainers": [
+    {
+      "Orientation": 0,
+      "VerticalTabListWidth": 256,
+      "DocumentGroups": [
+        {
+          "DockedWidth": 200,
+          "SelectedChildIndex": 1,
+          "Children": [
+            {
+              "$type": "Document",
+              "DocumentIndex": 2,
+              "Title": "UrdfJointRevolute.cs",
+              "DocumentMoniker": "C:\\Users\\crist\\Downloads\\UR5e\\Library\\PackageCache\\com.unity.robotics.urdf-importer@90f353e435\\Runtime\\UrdfComponents\\UrdfJoints\\UrdfJointRevolute.cs",
+              "RelativeDocumentMoniker": "Library\\PackageCache\\com.unity.robotics.urdf-importer@90f353e435\\Runtime\\UrdfComponents\\UrdfJoints\\UrdfJointRevolute.cs",
+              "ToolTip": "C:\\Users\\crist\\Downloads\\UR5e\\Library\\PackageCache\\com.unity.robotics.urdf-importer@90f353e435\\Runtime\\UrdfComponents\\UrdfJoints\\UrdfJointRevolute.cs",
+              "RelativeToolTip": "Library\\PackageCache\\com.unity.robotics.urdf-importer@90f353e435\\Runtime\\UrdfComponents\\UrdfJoints\\UrdfJointRevolute.cs",
+              "ViewState": "AgIAAEQAAAAAAAAAAAAqwFgAAAA4AAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-01-18T21:54:45.263Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 0,
+              "Title": "Ur5eSliderHandles.cs",
+              "DocumentMoniker": "C:\\Users\\crist\\Downloads\\UR5e\\Assets\\Ur5eSliderHandles.cs",
+              "RelativeDocumentMoniker": "Assets\\Ur5eSliderHandles.cs",
+              "ToolTip": "C:\\Users\\crist\\Downloads\\UR5e\\Assets\\Ur5eSliderHandles.cs",
+              "RelativeToolTip": "Assets\\Ur5eSliderHandles.cs",
+              "ViewState": "AgIAABoAAAAAAAAAAAAowC0AAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-01-18T21:13:44.157Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 1,
+              "Title": "ApplyJointAngles6.cs",
+              "DocumentMoniker": "C:\\Users\\crist\\Downloads\\UR5e\\Assets\\ApplyJointAngles6.cs",
+              "RelativeDocumentMoniker": "Assets\\ApplyJointAngles6.cs",
+              "ToolTip": "C:\\Users\\crist\\Downloads\\UR5e\\Assets\\ApplyJointAngles6.cs",
+              "RelativeToolTip": "Assets\\ApplyJointAngles6.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAB4AAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-01-18T21:10:03.471Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 4,
+              "Title": "KeyboardJogSliders.cs",
+              "DocumentMoniker": "C:\\Users\\crist\\Downloads\\UR5e\\Assets\\KeyboardJogSliders.cs",
+              "RelativeDocumentMoniker": "Assets\\KeyboardJogSliders.cs",
+              "ToolTip": "C:\\Users\\crist\\Downloads\\UR5e\\Assets\\KeyboardJogSliders.cs",
+              "RelativeToolTip": "Assets\\KeyboardJogSliders.cs",
+              "ViewState": "AgIAACkAAAAAAAAAAAAmwDMAAAANAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-01-18T20:58:33.546Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 3,
+              "Title": "Ur5eTrajectoryClientQ.cs",
+              "DocumentMoniker": "C:\\Users\\crist\\Downloads\\UR5e\\Assets\\Ur5eTrajectoryClientQ.cs",
+              "RelativeDocumentMoniker": "Assets\\Ur5eTrajectoryClientQ.cs",
+              "ToolTip": "C:\\Users\\crist\\Downloads\\UR5e\\Assets\\Ur5eTrajectoryClientQ.cs",
+              "RelativeToolTip": "Assets\\Ur5eTrajectoryClientQ.cs",
+              "ViewState": "AgIAAJoAAAAAAAAAAAAUwIgAAAAHAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-01-17T17:35:19.182Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:0:0:{cce594b6-0c39-4442-ba28-10c64ac7e89f}"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

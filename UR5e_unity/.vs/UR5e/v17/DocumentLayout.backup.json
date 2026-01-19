@@ -1,0 +1,248 @@
+{
+  "Version": 1,
+  "WorkspaceRootPath": "C:\\Users\\crist\\Downloads\\UR5e\\",
+  "Documents": [
+    {
+      "AbsoluteMoniker": "D:0:0:{EFCF67BD-9C6B-3546-A0FE-24B7332CEE81}|Assembly-CSharp.csproj|c:\\users\\crist\\downloads\\ur5e\\assets\\clicktoplan.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{EFCF67BD-9C6B-3546-A0FE-24B7332CEE81}|Assembly-CSharp.csproj|solutionrelative:assets\\clicktoplan.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\crist\\Downloads\\UR5e\\assets\\keyboardjogtobackend.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:assets\\keyboardjogtobackend.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{EFCF67BD-9C6B-3546-A0FE-24B7332CEE81}|Assembly-CSharp.csproj|C:\\Users\\crist\\Downloads\\UR5e\\assets\\applyjointangles6.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{EFCF67BD-9C6B-3546-A0FE-24B7332CEE81}|Assembly-CSharp.csproj|solutionrelative:assets\\applyjointangles6.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{EFCF67BD-9C6B-3546-A0FE-24B7332CEE81}|Assembly-CSharp.csproj|C:\\Users\\crist\\Downloads\\UR5e\\assets\\ur5esliderhandles.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{EFCF67BD-9C6B-3546-A0FE-24B7332CEE81}|Assembly-CSharp.csproj|solutionrelative:assets\\ur5esliderhandles.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{EFCF67BD-9C6B-3546-A0FE-24B7332CEE81}|Assembly-CSharp.csproj|C:\\Users\\crist\\Downloads\\UR5e\\assets\\ur5etrajectoryclientq.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{EFCF67BD-9C6B-3546-A0FE-24B7332CEE81}|Assembly-CSharp.csproj|solutionrelative:assets\\ur5etrajectoryclientq.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\crist\\Downloads\\UR5e\\Assets\\ClickToTarget.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:Assets\\ClickToTarget.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{EFCF67BD-9C6B-3546-A0FE-24B7332CEE81}|Assembly-CSharp.csproj|C:\\Users\\crist\\Downloads\\UR5e\\assets\\ur5ehttpclient.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{EFCF67BD-9C6B-3546-A0FE-24B7332CEE81}|Assembly-CSharp.csproj|solutionrelative:assets\\ur5ehttpclient.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\crist\\Downloads\\UR5e\\Assets\\ClickToMove.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:Assets\\ClickToMove.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\crist\\Downloads\\UR5e\\Assets\\Ur5eTrajectoryClient1.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:Assets\\Ur5eTrajectoryClient1.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\crist\\Downloads\\UR5e\\Assets\\Ur5eTrajectoryClient.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:Assets\\Ur5eTrajectoryClient.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\crist\\Downloads\\trajectory_pmp_explicit.hpp||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\crist\\Downloads\\trajectory_pmp_explicit_with_Jacc.hpp||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\crist\\Downloads\\UR5e\\Library\\PackageCache\\com.unity.robotics.urdf-importer@90f353e435\\Editor\\Unity.Robotics.URDFImporter.Editor.asmdef||{3B902123-F8A7-4915-9F01-361F908088D0}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:Library\\PackageCache\\com.unity.robotics.urdf-importer@90f353e435\\Editor\\Unity.Robotics.URDFImporter.Editor.asmdef||{3B902123-F8A7-4915-9F01-361F908088D0}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\crist\\Downloads\\UR5e\\assets\\targettobackend.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:assets\\targettobackend.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    }
+  ],
+  "DocumentGroupContainers": [
+    {
+      "Orientation": 0,
+      "VerticalTabListWidth": 256,
+      "DocumentGroups": [
+        {
+          "DockedWidth": 200,
+          "SelectedChildIndex": 0,
+          "Children": [
+            {
+              "$type": "Document",
+              "DocumentIndex": 0,
+              "Title": "ClickToPlan.cs",
+              "DocumentMoniker": "C:\\Users\\crist\\Downloads\\UR5e\\Assets\\ClickToPlan.cs",
+              "RelativeDocumentMoniker": "Assets\\ClickToPlan.cs",
+              "ToolTip": "C:\\Users\\crist\\Downloads\\UR5e\\Assets\\ClickToPlan.cs",
+              "RelativeToolTip": "Assets\\ClickToPlan.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAYAAAAnAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-01-18T19:54:13.078Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 12,
+              "Title": "Unity.Robotics.URDFImporter.Editor.asmdef",
+              "DocumentMoniker": "C:\\Users\\crist\\Downloads\\UR5e\\Library\\PackageCache\\com.unity.robotics.urdf-importer@90f353e435\\Editor\\Unity.Robotics.URDFImporter.Editor.asmdef",
+              "RelativeDocumentMoniker": "Library\\PackageCache\\com.unity.robotics.urdf-importer@90f353e435\\Editor\\Unity.Robotics.URDFImporter.Editor.asmdef",
+              "ToolTip": "C:\\Users\\crist\\Downloads\\UR5e\\Library\\PackageCache\\com.unity.robotics.urdf-importer@90f353e435\\Editor\\Unity.Robotics.URDFImporter.Editor.asmdef",
+              "RelativeToolTip": "Library\\PackageCache\\com.unity.robotics.urdf-importer@90f353e435\\Editor\\Unity.Robotics.URDFImporter.Editor.asmdef",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001874|",
+              "WhenOpened": "2026-01-15T10:40:55.248Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 2,
+              "Title": "ApplyJointAngles6.cs",
+              "DocumentMoniker": "C:\\Users\\crist\\Downloads\\UR5e\\Assets\\ApplyJointAngles6.cs",
+              "RelativeDocumentMoniker": "Assets\\ApplyJointAngles6.cs",
+              "ToolTip": "C:\\Users\\crist\\Downloads\\UR5e\\Assets\\ApplyJointAngles6.cs",
+              "RelativeToolTip": "Assets\\ApplyJointAngles6.cs",
+              "ViewState": "AgIAAA0AAAAAAAAAAAAzwAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-01-18T19:46:25.094Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 3,
+              "Title": "Ur5eSliderHandles.cs",
+              "DocumentMoniker": "C:\\Users\\crist\\Downloads\\UR5e\\Assets\\Ur5eSliderHandles.cs",
+              "RelativeDocumentMoniker": "Assets\\Ur5eSliderHandles.cs",
+              "ToolTip": "C:\\Users\\crist\\Downloads\\UR5e\\Assets\\Ur5eSliderHandles.cs",
+              "RelativeToolTip": "Assets\\Ur5eSliderHandles.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-01-18T15:46:42.722Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 4,
+              "Title": "Ur5eTrajectoryClientQ.cs",
+              "DocumentMoniker": "C:\\Users\\crist\\Downloads\\UR5e\\Assets\\Ur5eTrajectoryClientQ.cs",
+              "RelativeDocumentMoniker": "Assets\\Ur5eTrajectoryClientQ.cs",
+              "ToolTip": "C:\\Users\\crist\\Downloads\\UR5e\\Assets\\Ur5eTrajectoryClientQ.cs",
+              "RelativeToolTip": "Assets\\Ur5eTrajectoryClientQ.cs",
+              "ViewState": "AgIAAF4AAAAAAAAAAAAmwDQAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-01-17T17:35:19.182Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 1,
+              "Title": "KeyboardJogToBackend.cs",
+              "DocumentMoniker": "C:\\Users\\crist\\Downloads\\UR5e\\Assets\\KeyboardJogToBackend.cs",
+              "RelativeDocumentMoniker": "Assets\\KeyboardJogToBackend.cs",
+              "ToolTip": "C:\\Users\\crist\\Downloads\\UR5e\\Assets\\KeyboardJogToBackend.cs",
+              "RelativeToolTip": "Assets\\KeyboardJogToBackend.cs",
+              "ViewState": "AgIAAAIAAAAAAAAAAAAxwEYAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-01-15T21:01:35.218Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 6,
+              "Title": "Ur5eHttpClient.cs",
+              "DocumentMoniker": "C:\\Users\\crist\\Downloads\\UR5e\\Assets\\Ur5eHttpClient.cs",
+              "RelativeDocumentMoniker": "Assets\\Ur5eHttpClient.cs",
+              "ToolTip": "C:\\Users\\crist\\Downloads\\UR5e\\Assets\\Ur5eHttpClient.cs",
+              "RelativeToolTip": "Assets\\Ur5eHttpClient.cs",
+              "ViewState": "AgIAAJUAAAAAAAAAAAAUwKcAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-01-15T19:15:28.706Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 11,
+              "Title": "trajectory_pmp_explicit_with_Jacc.hpp",
+              "DocumentMoniker": "C:\\Users\\crist\\Downloads\\trajectory_pmp_explicit_with_Jacc.hpp",
+              "RelativeDocumentMoniker": "..\\trajectory_pmp_explicit_with_Jacc.hpp",
+              "ToolTip": "C:\\Users\\crist\\Downloads\\trajectory_pmp_explicit_with_Jacc.hpp",
+              "RelativeToolTip": "..\\trajectory_pmp_explicit_with_Jacc.hpp",
+              "ViewState": "AgIAAB4BAAAAAAAAAABRwCIBAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000680|",
+              "WhenOpened": "2026-01-18T19:53:31.536Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 10,
+              "Title": "trajectory_pmp_explicit.hpp",
+              "DocumentMoniker": "C:\\Users\\crist\\Downloads\\trajectory_pmp_explicit.hpp",
+              "RelativeDocumentMoniker": "..\\trajectory_pmp_explicit.hpp",
+              "ToolTip": "C:\\Users\\crist\\Downloads\\trajectory_pmp_explicit.hpp",
+              "RelativeToolTip": "..\\trajectory_pmp_explicit.hpp",
+              "ViewState": "AgIAAAoBAAAAAAAAAABRwB0BAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000680|",
+              "WhenOpened": "2026-01-18T19:53:31.546Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:0:0:{cce594b6-0c39-4442-ba28-10c64ac7e89f}"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 8,
+              "Title": "Ur5eTrajectoryClient1.cs",
+              "DocumentMoniker": "C:\\Users\\crist\\Downloads\\UR5e\\Assets\\Ur5eTrajectoryClient1.cs",
+              "RelativeDocumentMoniker": "Assets\\Ur5eTrajectoryClient1.cs",
+              "ToolTip": "C:\\Users\\crist\\Downloads\\UR5e\\Assets\\Ur5eTrajectoryClient1.cs",
+              "RelativeToolTip": "Assets\\Ur5eTrajectoryClient1.cs",
+              "ViewState": "AgIAAAsAAAAAAAAAAAAAwBMAAAAaAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-01-17T15:31:47.031Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 7,
+              "Title": "ClickToMove.cs",
+              "DocumentMoniker": "C:\\Users\\crist\\Downloads\\UR5e\\Assets\\ClickToMove.cs",
+              "RelativeDocumentMoniker": "Assets\\ClickToMove.cs",
+              "ToolTip": "C:\\Users\\crist\\Downloads\\UR5e\\Assets\\ClickToMove.cs",
+              "RelativeToolTip": "Assets\\ClickToMove.cs",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-01-15T19:53:39.25Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 5,
+              "Title": "ClickToTarget.cs",
+              "DocumentMoniker": "C:\\Users\\crist\\Downloads\\UR5e\\Assets\\ClickToTarget.cs",
+              "RelativeDocumentMoniker": "Assets\\ClickToTarget.cs",
+              "ToolTip": "C:\\Users\\crist\\Downloads\\UR5e\\Assets\\ClickToTarget.cs",
+              "RelativeToolTip": "Assets\\ClickToTarget.cs",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-01-15T19:36:26.557Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 9,
+              "Title": "Ur5eTrajectoryClient.cs",
+              "DocumentMoniker": "C:\\Users\\crist\\Downloads\\UR5e\\Assets\\Ur5eTrajectoryClient.cs",
+              "RelativeDocumentMoniker": "Assets\\Ur5eTrajectoryClient.cs",
+              "ToolTip": "C:\\Users\\crist\\Downloads\\UR5e\\Assets\\Ur5eTrajectoryClient.cs",
+              "RelativeToolTip": "Assets\\Ur5eTrajectoryClient.cs",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-01-15T21:39:36.625Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 13,
+              "Title": "TargetToBackend.cs",
+              "DocumentMoniker": "C:\\Users\\crist\\Downloads\\UR5e\\Assets\\TargetToBackend.cs",
+              "RelativeDocumentMoniker": "Assets\\TargetToBackend.cs",
+              "ToolTip": "C:\\Users\\crist\\Downloads\\UR5e\\Assets\\TargetToBackend.cs",
+              "RelativeToolTip": "Assets\\TargetToBackend.cs",
+              "ViewState": "AgIAAAMAAAAAAAAAAAAkwBQAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-01-15T21:10:22.324Z"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

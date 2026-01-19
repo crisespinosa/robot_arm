@@ -6,14 +6,11 @@
 #include <json/json.h>
 #include <iostream>
 
-#include "trajectory.hpp"         // plan_minjerk, plan_pmp_minimum_jerk
-
+#include "trajectory.hpp"         // plan_pmp_minimum_jerk(...)
 
 using namespace drogon;
 
-// ------------------------------------------------------------
-// Helper: vector q (tam 3/4/6) -> JSON q[6]
-// ------------------------------------------------------------
+// Helper: takes q of size 3/4/6 and returns JSON array always of size 6 (pads missing with zeros)
 static Json::Value to_q6_json(const std::vector<double> &q_in)
 {
     Json::Value q(Json::arrayValue);
@@ -24,21 +21,21 @@ static Json::Value to_q6_json(const std::vector<double> &q_in)
     return q;
 }
 
-
-// ----- CONSTRUCTOR -----
+// Constructor: initializes internal dynamics model for 6 DOF and sets state to zeros
 ArmController::ArmController()
     : dyn_(6)
 {
     dyn_.setState({0,0,0,0,0,0}, {0,0,0,0,0,0});
 }
 
-
-
+// HTTP handler: POST /arm/plan_pmp_q
 void ArmController::handlePlanPMP_Q(const HttpRequestPtr &req,
                                    std::function<void (const HttpResponsePtr &)> &&callback)
 {
+    // Try to get JSON directly from request (if Content-Type is application/json)
     auto json = req->getJsonObject();
 
+    // Fallback: manually parse body if getJsonObject() returned null
     Json::Value root;
     if (!json) {
         const auto& body = req->getBody();
@@ -54,7 +51,7 @@ void ArmController::handlePlanPMP_Q(const HttpRequestPtr &req,
         json = std::make_shared<Json::Value>(root);
     }
 
-    // ✅ Validate q_target[6]
+    // Validate that q_target exists and is an array
     if (!json->isMember("q_target") || !(*json)["q_target"].isArray()) {
         auto resp = HttpResponse::newHttpJsonResponse(Json::Value("Not enough parameters: q_target (array)"));
         resp->setStatusCode(k400BadRequest);
@@ -62,6 +59,7 @@ void ArmController::handlePlanPMP_Q(const HttpRequestPtr &req,
         return;
     }
 
+    // Validate q_target has at least 6 values
     const auto& arr = (*json)["q_target"];
     if (arr.size() < 6) {
         auto resp = HttpResponse::newHttpJsonResponse(Json::Value("q_target must have 6 values"));
@@ -70,7 +68,7 @@ void ArmController::handlePlanPMP_Q(const HttpRequestPtr &req,
         return;
     }
 
-    // ✅ Read full 6-DOF target
+    // Read 6-DOF target configuration in radians
     std::vector<double> q_target6 = {
         arr[0].asDouble(),
         arr[1].asDouble(),
@@ -80,21 +78,22 @@ void ArmController::handlePlanPMP_Q(const HttpRequestPtr &req,
         arr[5].asDouble()
     };
 
+    // Read optional parameters (defaults if missing)
     double T  = json->isMember("T")  ? (*json)["T"].asDouble()  : 1.0;
     double dt = json->isMember("dt") ? (*json)["dt"].asDouble() : 0.02;
 
-    // ✅ Ensure internal state is 6 DOF
+    // Ensure internal state vectors are 6 DOF (safety for older / inconsistent state)
     auto st = dyn_.state();
     if (st.q.size() < 6) dyn_.setState({0,0,0,0,0,0}, {0,0,0,0,0,0});
 
-    // ✅ Current state q0[6]
+    // Current joint state q0 (rad) as start point for planning
     auto q0 = dyn_.state().q;
     std::vector<double> q0_6 = { q0[0], q0[1], q0[2], q0[3], q0[4], q0[5] };
 
-    // ✅ PMP trajectory for 6 DOF
+    // Compute PMP + minimum-jerk trajectory: returns list of points {t, q}
     auto pmp_traj = plan_pmp_minimum_jerk(q0_6, q_target6, T, dt);
 
-    // ✅ Update internal state to final target (6 DOF)
+    // Update internal dynamics state to final pose (so next request starts from last target)
     auto st2 = dyn_.state();
     std::vector<double> q6  = st2.q;
     std::vector<double> dq6 = st2.dq;
@@ -103,11 +102,11 @@ void ArmController::handlePlanPMP_Q(const HttpRequestPtr &req,
 
     for (int i = 0; i < 6; ++i) {
         q6[i]  = q_target6[i];
-        dq6[i] = 0.0;
+        dq6[i] = 0.0; // stop at the end
     }
     dyn_.setState(q6, dq6);
 
-    // ✅ JSON response (already q[6])
+    // Build JSON response: { dt, unit, trajectory: [ {t, q[6]}, ... ] }
     Json::Value out(Json::objectValue);
     out["dt"] = dt;
     out["unit"] = "rad";
@@ -116,10 +115,11 @@ void ArmController::handlePlanPMP_Q(const HttpRequestPtr &req,
     for (const auto &p : pmp_traj) {
         Json::Value item(Json::objectValue);
         item["t"] = p.t;
-        item["q"] = to_q6_json(p.q); // p.q ya es size 6, esto lo deja igual
+        item["q"] = to_q6_json(p.q); // ensures always 6 values (pads if needed)
         out["trajectory"].append(item);
     }
 
+    // Send response
     auto resp = HttpResponse::newHttpJsonResponse(out);
     callback(resp);
 }

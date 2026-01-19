@@ -1,0 +1,6 @@
+/home/vboxuser/robot_arm/build/CMakeFiles/robot_arm.dir
+/home/vboxuser/robot_arm/build/CMakeFiles/edit_cache.dir
+/home/vboxuser/robot_arm/build/CMakeFiles/rebuild_cache.dir
+/home/vboxuser/robot_arm/build/test/CMakeFiles/robot_arm_test.dir
+/home/vboxuser/robot_arm/build/test/CMakeFiles/edit_cache.dir
+/home/vboxuser/robot_arm/build/test/CMakeFiles/rebuild_cache.dir

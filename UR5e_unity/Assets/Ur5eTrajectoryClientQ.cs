@@ -24,8 +24,8 @@ public class Ur5eTrajectoryClientQ : MonoBehaviour
     public string path = "/arm/plan_pmp_q";
 
     [Header("Trajectory params")]
-    public float T = 1.0f;     // total trajectory duration (seconds)
-    public float dt = 0.02f;   // timestep requested from backend (seconds)
+    public float T = 1.0f;     // total trajectory duration (sec)
+    public float dt = 0.02f;   // timestep requested from backend (sec)
 
     [Header("Playback speed")]
     [Tooltip("1 = normal, 2 = 2x slower, 0.5 = 2x faster")]

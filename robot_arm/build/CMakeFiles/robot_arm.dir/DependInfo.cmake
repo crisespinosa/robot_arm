@@ -8,8 +8,8 @@ set(CMAKE_DEPENDS_LANGUAGES
 
 # The set of dependency files which are needed:
 set(CMAKE_DEPENDS_DEPENDENCY_FILES
-  "/home/vboxuser/robot_arm/controllers/ArmController.cc" "CMakeFiles/robot_arm.dir/controllers/ArmController.cc.o" "gcc" "CMakeFiles/robot_arm.dir/controllers/ArmController.cc.o.d"
-  "/home/vboxuser/robot_arm/main.cc" "CMakeFiles/robot_arm.dir/main.cc.o" "gcc" "CMakeFiles/robot_arm.dir/main.cc.o.d"
+  "/home/vboxuser/robot_arm1/controllers/ArmController.cc" "CMakeFiles/robot_arm.dir/controllers/ArmController.cc.o" "gcc" "CMakeFiles/robot_arm.dir/controllers/ArmController.cc.o.d"
+  "/home/vboxuser/robot_arm1/main.cc" "CMakeFiles/robot_arm.dir/main.cc.o" "gcc" "CMakeFiles/robot_arm.dir/main.cc.o.d"
   )
 
 # Targets to which this target links which contain Fortran sources.

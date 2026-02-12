@@ -1,73 +1,119 @@
 #pragma once
-// Ensures this header file is included only once during compilation
 
 #include <vector>
 #include <algorithm>
 #include <cassert>
 
+// ------------------------------------------------------------
+// ArmState — структура состояния манипулятора.
+// Хранит текущие значения для всех суставов (размер = dof):
+//   q   — положения (рад)
+//   dq  — скорости  (рад/с)
+//   ddq — ускорения (рад/с^2), последнее вычисленное значение
+// ------------------------------------------------------------
 struct ArmState {
-    std::vector<double> q;   // Joint positions (rad)
-    std::vector<double> dq;  // Joint velocities (rad/s)
+    std::vector<double> q;    // положения (rad)
+    std::vector<double> dq;   // скорости (rad/s)
+    std::vector<double> ddq;  // ускорения (rad/s^2) (последнее значение)
 };
 
+// ------------------------------------------------------------
+// SimpleDynamics — очень упрощённая динамика “для отладки/демо”.
+// Здесь предполагается модель вида:
+//   ddq = tau
+// то есть момент tau напрямую задаёт угловое ускорение (без инерции/Кориолиса/гравитации).
+//
+// Интегрирование по времени (явный Эйлер):
+//   dq(t+dt) = dq(t) + dt * ddq
+//   q (t+dt) = q (t) + dt * dq(t+dt)
+//
+// Также добавлены ограничения:
+//   q ∈ [qmin, qmax]
+//   |dq| ≤ dqmax
+// ------------------------------------------------------------
 class SimpleDynamics {
 public:
-    // Constructor: initializes a robot model with given degrees of freedom
+    // Конструктор: задаём число степеней свободы (суставов) dof
     explicit SimpleDynamics(size_t dof) : dof_(dof) {
-        state_.q.assign(dof_, 0.0);   // Initialize joint positions
-        state_.dq.assign(dof_, 0.0);  // Initialize joint velocities
-        tau_.assign(dof_, 0.0);       // Initialize control torques
+        // Инициализация состояния нулями
+        state_.q.assign(dof_, 0.0);
+        state_.dq.assign(dof_, 0.0);
+        state_.ddq.assign(dof_, 0.0);
 
-        // Joint limits
-        qmin_.assign(dof_, -3.14159); // -180 degrees
-        qmax_.assign(dof_, 3.14159); // +180 degrees
-        dqmax_.assign(dof_, 4.0);    // Max joint speed (rad/s)
+        // Вектор управляющих моментов tau (по суставам)
+        tau_.assign(dof_, 0.0);
+
+        // Ограничения по углу (по умолчанию [-pi, pi])
+        qmin_.assign(dof_, -3.14159);
+        qmax_.assign(dof_,  3.14159);
+
+        // Ограничения по модулю скорости (по умолчанию 4 рад/с)
+        dqmax_.assign(dof_, 4.0);
     }
 
-    // Returns the current state of the arm
+    // Доступ к текущему состоянию (read-only)
     const ArmState& state() const { return state_; }
 
-    // Sets the robot state (positions and velocities)
+    // Установка состояния (q, dq). Ускорения сбрасываем в 0,
+    // затем “зажимаем” состояние в допустимых пределах.
     void setState(const std::vector<double>& q,
-        const std::vector<double>& dq)
+                  const std::vector<double>& dq)
     {
         assert(q.size() == dof_ && dq.size() == dof_);
         state_.q = q;
         state_.dq = dq;
-        clampState(); // Enforce limits
+        state_.ddq.assign(dof_, 0.0);
+        clampState();
     }
 
-    // Sets the control torques
+    // Установка управляющих моментов tau (по суставам)
     void setTorque(const std::vector<double>& tau) {
         assert(tau.size() == dof_);
         tau_ = tau;
     }
 
-    // Very simple dynamic model:
-    // ddq = tau
-    // dq += dt * ddq
-    // q  += dt * dq
+    // Один шаг моделирования на dt (сек).
+    //
+    // Модель:
+    //   ddq = tau
+    //
+    // Интегрирование (явный Эйлер):
+    //   dq += dt * ddq
+    //   q  += dt * dq
+    //
+    // После каждого обновления применяем ограничения:
+    //   dq в пределах [-dqmax, dqmax]
+    //   q  в пределах [qmin, qmax]
     void step(double dt) {
         for (size_t i = 0; i < dof_; ++i) {
-            double ddq = tau_[i];                    // Acceleration = torque
-            state_.dq[i] += dt * ddq;               // Integrate velocity
+            // По упрощённой модели момент напрямую равен ускорению
+            double ddq = tau_[i];
+            state_.ddq[i] = ddq;
+
+            // Обновляем скорость
+            state_.dq[i] += dt * ddq;
             state_.dq[i] = std::clamp(state_.dq[i], -dqmax_[i], dqmax_[i]);
-            state_.q[i] += dt * state_.dq[i];      // Integrate position
+
+            // Обновляем положение
+            state_.q[i] += dt * state_.dq[i];
             state_.q[i] = std::clamp(state_.q[i], qmin_[i], qmax_[i]);
         }
     }
 
 private:
-    // Enforces joint and velocity limits
+    // Внутренняя функция “зажима” состояния в допустимые пределы
     void clampState() {
         for (size_t i = 0; i < dof_; ++i) {
-            state_.q[i] = std::clamp(state_.q[i], qmin_[i], qmax_[i]);
+            state_.q[i]  = std::clamp(state_.q[i],  qmin_[i], qmax_[i]);
             state_.dq[i] = std::clamp(state_.dq[i], -dqmax_[i], dqmax_[i]);
         }
     }
 
-    size_t dof_;                     // Number of degrees of freedom
-    ArmState state_;                 // Current robot state
-    std::vector<double> tau_;        // Control torques
-    std::vector<double> qmin_, qmax_, dqmax_; // Joint and velocity limits
+    size_t dof_;                 // число суставов
+    ArmState state_;             // текущее состояние
+    std::vector<double> tau_;    // управляющие моменты (в этой модели = ускорения)
+
+    // Ограничения: углы и скорости
+    std::vector<double> qmin_, qmax_, dqmax_;
 };
+

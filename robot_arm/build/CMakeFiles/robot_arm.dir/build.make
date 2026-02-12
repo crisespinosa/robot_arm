@@ -53,10 +53,10 @@ RM = /usr/bin/cmake -E rm -f
 EQUALS = =
 
 # The top-level source directory on which CMake was run.
-CMAKE_SOURCE_DIR = /home/vboxuser/robot_arm
+CMAKE_SOURCE_DIR = /home/vboxuser/robot_arm1
 
 # The top-level build directory on which CMake was run.
-CMAKE_BINARY_DIR = /home/vboxuser/robot_arm/build
+CMAKE_BINARY_DIR = /home/vboxuser/robot_arm1/build
 
 # Include any dependencies generated for this target.
 include CMakeFiles/robot_arm.dir/depend.make
@@ -70,32 +70,32 @@ include CMakeFiles/robot_arm.dir/progress.make
 include CMakeFiles/robot_arm.dir/flags.make
 
 CMakeFiles/robot_arm.dir/main.cc.o: CMakeFiles/robot_arm.dir/flags.make
-CMakeFiles/robot_arm.dir/main.cc.o: /home/vboxuser/robot_arm/main.cc
+CMakeFiles/robot_arm.dir/main.cc.o: /home/vboxuser/robot_arm1/main.cc
 CMakeFiles/robot_arm.dir/main.cc.o: CMakeFiles/robot_arm.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/vboxuser/robot_arm/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_1) "Building CXX object CMakeFiles/robot_arm.dir/main.cc.o"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/robot_arm.dir/main.cc.o -MF CMakeFiles/robot_arm.dir/main.cc.o.d -o CMakeFiles/robot_arm.dir/main.cc.o -c /home/vboxuser/robot_arm/main.cc
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/vboxuser/robot_arm1/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_1) "Building CXX object CMakeFiles/robot_arm.dir/main.cc.o"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/robot_arm.dir/main.cc.o -MF CMakeFiles/robot_arm.dir/main.cc.o.d -o CMakeFiles/robot_arm.dir/main.cc.o -c /home/vboxuser/robot_arm1/main.cc
 
 CMakeFiles/robot_arm.dir/main.cc.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/robot_arm.dir/main.cc.i"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/vboxuser/robot_arm/main.cc > CMakeFiles/robot_arm.dir/main.cc.i
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/vboxuser/robot_arm1/main.cc > CMakeFiles/robot_arm.dir/main.cc.i
 
 CMakeFiles/robot_arm.dir/main.cc.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/robot_arm.dir/main.cc.s"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/vboxuser/robot_arm/main.cc -o CMakeFiles/robot_arm.dir/main.cc.s
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/vboxuser/robot_arm1/main.cc -o CMakeFiles/robot_arm.dir/main.cc.s
 
 CMakeFiles/robot_arm.dir/controllers/ArmController.cc.o: CMakeFiles/robot_arm.dir/flags.make
-CMakeFiles/robot_arm.dir/controllers/ArmController.cc.o: /home/vboxuser/robot_arm/controllers/ArmController.cc
+CMakeFiles/robot_arm.dir/controllers/ArmController.cc.o: /home/vboxuser/robot_arm1/controllers/ArmController.cc
 CMakeFiles/robot_arm.dir/controllers/ArmController.cc.o: CMakeFiles/robot_arm.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/vboxuser/robot_arm/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_2) "Building CXX object CMakeFiles/robot_arm.dir/controllers/ArmController.cc.o"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/robot_arm.dir/controllers/ArmController.cc.o -MF CMakeFiles/robot_arm.dir/controllers/ArmController.cc.o.d -o CMakeFiles/robot_arm.dir/controllers/ArmController.cc.o -c /home/vboxuser/robot_arm/controllers/ArmController.cc
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/vboxuser/robot_arm1/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_2) "Building CXX object CMakeFiles/robot_arm.dir/controllers/ArmController.cc.o"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/robot_arm.dir/controllers/ArmController.cc.o -MF CMakeFiles/robot_arm.dir/controllers/ArmController.cc.o.d -o CMakeFiles/robot_arm.dir/controllers/ArmController.cc.o -c /home/vboxuser/robot_arm1/controllers/ArmController.cc
 
 CMakeFiles/robot_arm.dir/controllers/ArmController.cc.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/robot_arm.dir/controllers/ArmController.cc.i"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/vboxuser/robot_arm/controllers/ArmController.cc > CMakeFiles/robot_arm.dir/controllers/ArmController.cc.i
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/vboxuser/robot_arm1/controllers/ArmController.cc > CMakeFiles/robot_arm.dir/controllers/ArmController.cc.i
 
 CMakeFiles/robot_arm.dir/controllers/ArmController.cc.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/robot_arm.dir/controllers/ArmController.cc.s"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/vboxuser/robot_arm/controllers/ArmController.cc -o CMakeFiles/robot_arm.dir/controllers/ArmController.cc.s
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/vboxuser/robot_arm1/controllers/ArmController.cc -o CMakeFiles/robot_arm.dir/controllers/ArmController.cc.s
 
 # Object files for target robot_arm
 robot_arm_OBJECTS = \
@@ -120,7 +120,7 @@ robot_arm: /usr/lib/x86_64-linux-gnu/libsqlite3.so
 robot_arm: /usr/lib/x86_64-linux-gnu/libhiredis.so
 robot_arm: /usr/lib/x86_64-linux-gnu/libz.so
 robot_arm: CMakeFiles/robot_arm.dir/link.txt
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --bold --progress-dir=/home/vboxuser/robot_arm/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_3) "Linking CXX executable robot_arm"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --bold --progress-dir=/home/vboxuser/robot_arm1/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_3) "Linking CXX executable robot_arm"
 	$(CMAKE_COMMAND) -E cmake_link_script CMakeFiles/robot_arm.dir/link.txt --verbose=$(VERBOSE)
 
 # Rule to build all files generated by this target.
@@ -132,6 +132,6 @@ CMakeFiles/robot_arm.dir/clean:
 .PHONY : CMakeFiles/robot_arm.dir/clean
 
 CMakeFiles/robot_arm.dir/depend:
-	cd /home/vboxuser/robot_arm/build && $(CMAKE_COMMAND) -E cmake_depends "Unix Makefiles" /home/vboxuser/robot_arm /home/vboxuser/robot_arm /home/vboxuser/robot_arm/build /home/vboxuser/robot_arm/build /home/vboxuser/robot_arm/build/CMakeFiles/robot_arm.dir/DependInfo.cmake "--color=$(COLOR)"
+	cd /home/vboxuser/robot_arm1/build && $(CMAKE_COMMAND) -E cmake_depends "Unix Makefiles" /home/vboxuser/robot_arm1 /home/vboxuser/robot_arm1 /home/vboxuser/robot_arm1/build /home/vboxuser/robot_arm1/build /home/vboxuser/robot_arm1/build/CMakeFiles/robot_arm.dir/DependInfo.cmake "--color=$(COLOR)"
 .PHONY : CMakeFiles/robot_arm.dir/depend
 

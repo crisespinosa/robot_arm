@@ -4,7 +4,7 @@
 # compile CXX with /usr/bin/c++
 CXX_DEFINES = 
 
-CXX_INCLUDES = -I/home/vboxuser/robot_arm -I/home/vboxuser/robot_arm/models -I/home/vboxuser/robot_arm/include -isystem /usr/include/jsoncpp
+CXX_INCLUDES = -I/home/vboxuser/robot_arm1 -I/home/vboxuser/robot_arm1/models -I/home/vboxuser/robot_arm1/include -isystem /usr/include/jsoncpp
 
-CXX_FLAGS = -std=c++17
+CXX_FLAGS = -O3 -DNDEBUG -std=c++17
 

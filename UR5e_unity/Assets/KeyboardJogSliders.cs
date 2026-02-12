@@ -2,50 +2,56 @@
 
 public class KeyboardJogSliders : MonoBehaviour
 {
-    public Ur5eSliderHandles ui;     // UI handler for robot joint sliders
-    public float stepDeg = 2f;      // Step size in degrees per key press
-    public bool enableJog = true;   // Enable/disable keyboard jogging
+    public Ur5eSliderHandles ui;   // arrastra el objeto que tiene Ur5eSliderHandles
+    public float stepDeg = 2f;     // cuánto cambia por tecla (grados)
+    public bool enableJog = true;
 
-    float timer = 0f;               // Limits sending frequency to backend
+    float timer = 0f;
 
     void Update()
     {
-        if (!enableJog || ui == null) return;
+        if (!enableJog) return;
+        if (ui == null) return;
 
         timer -= Time.deltaTime;
+
         bool changed = false;
 
-        // Joint 1
+        // Q/A -> Joint 1
         if (Input.GetKey(KeyCode.Q)) { ui.q1.value += stepDeg; changed = true; }
         if (Input.GetKey(KeyCode.A)) { ui.q1.value -= stepDeg; changed = true; }
 
-        // Joint 2
+        // W/S -> Joint 2
         if (Input.GetKey(KeyCode.W)) { ui.q2.value += stepDeg; changed = true; }
         if (Input.GetKey(KeyCode.S)) { ui.q2.value -= stepDeg; changed = true; }
 
-        // Joint 3
+        // E/D -> Joint 3
         if (Input.GetKey(KeyCode.E)) { ui.q3.value += stepDeg; changed = true; }
         if (Input.GetKey(KeyCode.D)) { ui.q3.value -= stepDeg; changed = true; }
 
-        // Joint 4
+        // R/F -> Joint 4
         if (Input.GetKey(KeyCode.R)) { ui.q4.value += stepDeg; changed = true; }
         if (Input.GetKey(KeyCode.F)) { ui.q4.value -= stepDeg; changed = true; }
 
-        // Joint 5
+        // T/G -> Joint 5
         if (Input.GetKey(KeyCode.T)) { ui.q5.value += stepDeg; changed = true; }
         if (Input.GetKey(KeyCode.G)) { ui.q5.value -= stepDeg; changed = true; }
 
-        // Joint 6
+        // Y/H -> Joint 6
         if (Input.GetKey(KeyCode.Y)) { ui.q6.value += stepDeg; changed = true; }
         if (Input.GetKey(KeyCode.H)) { ui.q6.value -= stepDeg; changed = true; }
 
         if (changed)
         {
             ui.UpdateLabels();
+
+            // limit how often we send to backend
             if (timer <= 0f)
-                ui.SendTarget();
+            {
+                ui.SendTarget();       // -> calls client.RequestPlanQ(qRad)
+             
+            }
         }
     }
 }
-
 

@@ -1,37 +1,112 @@
-using UnityEngine;
+﻿using UnityEngine;
 using Unity.Robotics.UrdfImporter;
 
 public class ApplyJointAngles6 : MonoBehaviour
 {
-    // References to the six revolute joints of the robot (must be assigned in Unity Inspector)
+    [Header("Assign the 6 UrdfJointRevolute JOINT objects here (not random links)")]
     public UrdfJointRevolute q1, q2, q3, q4, q5, q6;
 
-    // Stores the last applied joint configuration in radians
+    [Header("Drive config (optional but helps)")]
+    public bool forceDriveConfig = true;
+    public float stiffness = 20000f;
+    public float damping = 2000f;
+    public float forceLimit = 1000f;
+
+    [Header("Debug")]
+    public bool debugMappingOnStart = true;
+
     public float[] LastQRad { get; private set; } = new float[6];
 
-    // Applies a 6-DOF joint vector (in radians) to the robot joints
-    public void Apply(float[] q)
+    ArticulationBody ab1, ab2, ab3, ab4, ab5, ab6;
+    bool cached;
+
+    void Awake()
     {
-        // Validate input vector
-        if (q == null || q.Length < 6) return;
+        CacheArticulations();
+        if (debugMappingOnStart) DumpMapping();
+    }
 
-        // Store last commanded joint pose
-        for (int i = 0; i < 6; i++) LastQRad[i] = q[i];
+    void CacheArticulations()
+    {
+        ab1 = FindChildLinkAB(q1, "q1");
+        ab2 = FindChildLinkAB(q2, "q2");
+        ab3 = FindChildLinkAB(q3, "q3");
+        ab4 = FindChildLinkAB(q4, "q4");
+        ab5 = FindChildLinkAB(q5, "q5");
+        ab6 = FindChildLinkAB(q6, "q6");
+        cached = true;
+    }
 
-        // Check that all joints are correctly assigned
-        if (q1 == null || q2 == null || q3 == null || q4 == null || q5 == null || q6 == null)
+    ArticulationBody FindChildLinkAB(UrdfJointRevolute joint, string name)
+    {
+        if (joint == null)
         {
-            Debug.LogError("[ApplyJointAngles6] Assign q1..q6 (UrdfJointRevolute).");
-            return;
+            Debug.LogWarning($"[ApplyJointAngles6] {name} is NULL (not assigned).");
+            return null;
         }
 
-        // Apply joint angles converting from radians to degrees
-        q1.UpdateJointState(q[0] * Mathf.Rad2Deg);
-        q2.UpdateJointState(q[1] * Mathf.Rad2Deg);
-        q3.UpdateJointState(q[2] * Mathf.Rad2Deg);
-        q4.UpdateJointState(q[3] * Mathf.Rad2Deg);
-        q5.UpdateJointState(q[4] * Mathf.Rad2Deg);
-        q6.UpdateJointState(q[5] * Mathf.Rad2Deg);
+        var ab = joint.GetComponentInChildren<ArticulationBody>(true);
+
+        if (ab == null) ab = joint.GetComponent<ArticulationBody>();
+
+        if (ab == null)
+            Debug.LogWarning($"[ApplyJointAngles6] {name}: No ArticulationBody found in CHILDREN of joint GO={joint.gameObject.name}");
+
+        return ab;
+    }
+
+    void ConfigureDrive(ArticulationBody ab)
+    {
+        if (ab == null || !forceDriveConfig) return;
+        var d = ab.xDrive;
+        d.stiffness = stiffness;
+        d.damping = damping;
+        d.forceLimit = forceLimit;
+        ab.xDrive = d;
+    }
+
+    void SetTargetRad(ArticulationBody ab, float rad)
+    {
+        if (ab == null) return;
+
+        ConfigureDrive(ab);
+
+        var d = ab.xDrive;
+        d.target = rad * Mathf.Rad2Deg;
+        ab.xDrive = d;
+    }
+
+    public void Apply(float[] qRad)
+    {
+        if (qRad == null || qRad.Length < 6) return;
+        if (!cached) CacheArticulations();
+
+        for (int i = 0; i < 6; i++) LastQRad[i] = qRad[i];
+
+        SetTargetRad(ab1, qRad[0]);
+        SetTargetRad(ab2, qRad[1]);
+        SetTargetRad(ab3, qRad[2]);
+        SetTargetRad(ab4, qRad[3]);
+        SetTargetRad(ab5, qRad[4]);
+        SetTargetRad(ab6, qRad[5]);
+    }
+
+    void DumpMapping()
+    {
+        Debug.Log("=== [ApplyJointAngles6] Mapping ===");
+        DumpOne("q1", q1, ab1);
+        DumpOne("q2", q2, ab2);
+        DumpOne("q3", q3, ab3);
+        DumpOne("q4", q4, ab4);
+        DumpOne("q5", q5, ab5);
+        DumpOne("q6", q6, ab6);
+        Debug.Log("=== [ApplyJointAngles6] End mapping ===");
+    }
+
+    void DumpOne(string name, UrdfJointRevolute j, ArticulationBody ab)
+    {
+        string jName = (j != null) ? j.gameObject.name : "NULL";
+        string abName = (ab != null) ? ab.gameObject.name : "NULL";
+        Debug.Log($"[ApplyJointAngles6] {name}: jointGO={jName} -> abGO={abName}");
     }
 }
-

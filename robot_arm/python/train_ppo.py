@@ -229,8 +229,10 @@ def train(args):
             for i in range(args.num_envs)
         ])
 
-    # Eval environment (separate instance)
-    eval_env = DummyVecEnv([make_env(99, args.url, env_config, None)])
+    # Eval environment (separate instance, with Monitor)
+    eval_monitor_dir = os.path.join(args.log_dir, "eval_monitor")
+    os.makedirs(eval_monitor_dir, exist_ok=True)
+    eval_env = DummyVecEnv([make_env(99, args.url, env_config, eval_monitor_dir)])
 
     # PPO hyperparameters tuned for this task
     model = PPO(

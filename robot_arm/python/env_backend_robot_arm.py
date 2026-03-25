@@ -44,4 +44,9 @@ class RobotArmBackendEnv:
         obs = np.asarray(data["obs"], dtype=np.float32)
         reward = float(data["reward"])
         done = bool(data["done"])
-        return obs, reward, done, data
+        # Extract nested "info" dict from backend response and merge it
+        # so that keys like eq_rms, success are at the top level
+        info = dict(data)
+        if "info" in data and isinstance(data["info"], dict):
+            info.update(data["info"])
+        return obs, reward, done, info

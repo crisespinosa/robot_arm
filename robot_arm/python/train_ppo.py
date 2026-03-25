@@ -341,10 +341,12 @@ def evaluate(args):
         if success:
             successes += 1
 
+        eq_rms = info.get('eq_rms')
+        eq_str = f"{eq_rms:.4f}" if isinstance(eq_rms, (int, float)) else "?"
         print(f"  Episode {ep+1}/{args.eval_episodes}: "
               f"reward={ep_reward:.3f}, "
               f"success={success}, "
-              f"eq_rms={info.get('eq_rms', '?'):.4f}")
+              f"eq_rms={eq_str}")
 
     avg_reward = total_reward / args.eval_episodes
     success_rate = successes / args.eval_episodes * 100

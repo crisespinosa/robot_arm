@@ -23,7 +23,7 @@ import numpy as np
 from gymnasium import spaces
 
 from stable_baselines3 import PPO
-from stable_baselines3.common.callbacks import BaseCallback, CallbackList, CheckpointCallback
+from stable_baselines3.common.callbacks import BaseCallback, CallbackList, CheckpointCallback, EvalCallback
 from stable_baselines3.common.monitor import Monitor
 from stable_baselines3.common.vec_env import DummyVecEnv
 
@@ -445,7 +445,6 @@ def train(args: argparse.Namespace):
     eval_monitor_dir = os.path.join(args.log_dir, "eval_monitor")
     os.makedirs(eval_monitor_dir, exist_ok=True)
     eval_env_vec = DummyVecEnv([make_env_v2(99, args.url, eval_config, eval_monitor_dir)])
-    eval_env_plain = UR5eGymEnvV2(base_url=args.url, config=eval_config)
 
     model = PPO(
         "MlpPolicy",
@@ -474,15 +473,15 @@ def train(args: argparse.Namespace):
         name_prefix="ur5e_ppo_v2",
     )
     metrics_cb = TrainingMetricsCallback()
-    success_eval_cb = SuccessRateEvalCallback(
-        eval_env=eval_env_plain,
+    eval_cb = EvalCallback(
+        eval_env_vec,
+        best_model_save_path=os.path.join(args.save_dir, "best"),
         eval_freq=max(args.eval_freq, 1),
         n_eval_episodes=args.eval_episodes,
-        best_model_save_path=os.path.join(args.save_dir, "best"),
         deterministic=True,
         verbose=1,
     )
-    callbacks = CallbackList([checkpoint_cb, metrics_cb, success_eval_cb])
+    callbacks = CallbackList([checkpoint_cb, metrics_cb, eval_cb])
 
     print("\nStarting training...\n")
     t0 = time.time()
@@ -501,7 +500,6 @@ def train(args: argparse.Namespace):
 
     env.close()
     eval_env_vec.close()
-    eval_env_plain.close()
 
 
 def evaluate(args: argparse.Namespace):

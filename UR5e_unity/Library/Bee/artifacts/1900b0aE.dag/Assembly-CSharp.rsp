@@ -397,6 +397,7 @@
 "Assets/TextMesh Pro/Examples & Extras/Scripts/VertexShakeB.cs"
 "Assets/TextMesh Pro/Examples & Extras/Scripts/VertexZoom.cs"
 "Assets/TextMesh Pro/Examples & Extras/Scripts/WarpTextExample.cs"
+"Assets/Ur5ePPOController.cs"
 "Assets/Ur5eSliderHandles.cs"
 "Assets/Ur5eTrajectoryClientQ.cs"
 -langversion:9.0

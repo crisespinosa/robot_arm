@@ -359,6 +359,7 @@ static ControlResult compute_control_step(const std::vector<double>& q_use,
 
 ArmController::ArmController()
     : dyn_(6) {
+    dyn_.resetParamScales();
     dyn_.setState({0,0,0,0,0,0}, {0,0,0,0,0,0});
 }
 
@@ -494,6 +495,7 @@ void ArmController::handleSetReference(const HttpRequestPtr& req,
 
     {
         std::lock_guard<std::mutex> lk(mtx_);
+        dyn_.resetParamScales();
         ref_traj_ = std::move(traj);
         ref_dt_ = dt;
         ref_T_ = T;
@@ -753,6 +755,10 @@ void ArmController::handleRLReset(const HttpRequestPtr& req,
     if (max_steps < 1) max_steps = 1;
     double success_tol = json->isMember("success_tol") ? (*json)["success_tol"].asDouble() : 0.03;
     if (success_tol <= 0.0) success_tol = 0.03;
+    double friction_scale = json->isMember("friction_scale") ? (*json)["friction_scale"].asDouble() : 1.0;
+    double inertia_scale = json->isMember("inertia_scale") ? (*json)["inertia_scale"].asDouble() : 1.0;
+    friction_scale = std::clamp(friction_scale, 0.2, 3.0);
+    inertia_scale = std::clamp(inertia_scale, 0.2, 3.0);
 
     double rw_pos = json->isMember("rw_pos") ? (*json)["rw_pos"].asDouble() : 2.0;
     double rw_vel = json->isMember("rw_vel") ? (*json)["rw_vel"].asDouble() : 0.15;
@@ -781,6 +787,9 @@ void ArmController::handleRLReset(const HttpRequestPtr& req,
         rl_last_tau_cmd_.assign(6, 0.0);
         rl_q_start_ = q_start6;
         rl_q_target_ = q_target6;
+        rl_inertia_scale_ = inertia_scale;
+        rl_friction_scale_ = friction_scale;
+        dyn_.setParamScales(inertia_scale, friction_scale);
         rw_pos_ = rw_pos;
         rw_vel_ = rw_vel;
         rw_u_ = rw_u;
@@ -804,6 +813,8 @@ void ArmController::handleRLReset(const HttpRequestPtr& req,
     out["T"] = T;
     out["max_steps"] = max_steps;
     out["success_tol"] = success_tol;
+    out["friction_scale"] = friction_scale;
+    out["inertia_scale"] = inertia_scale;
     callback(HttpResponse::newHttpJsonResponse(out));
 }
 
@@ -829,6 +840,8 @@ void ArmController::handleRLStep(const HttpRequestPtr& req,
     double u_max = 8.0;
     double success_tol = 0.03;
     std::vector<double> last_tau(6, 0.0);
+    double rl_inertia_scale = 1.0;
+    double rl_friction_scale = 1.0;
     double rw_pos = 2.0, rw_vel = 0.15, rw_u = 0.01, rw_du = 0.005, rw_success = 5.0;
 
     {
@@ -850,6 +863,8 @@ void ArmController::handleRLStep(const HttpRequestPtr& req,
         u_max = rl_u_max_;
         success_tol = rl_success_tol_;
         last_tau = rl_last_tau_cmd_;
+        rl_inertia_scale = rl_inertia_scale_;
+        rl_friction_scale = rl_friction_scale_;
         rw_pos = rw_pos_;
         rw_vel = rw_vel_;
         rw_u = rw_u_;
@@ -957,6 +972,8 @@ void ArmController::handleRLStep(const HttpRequestPtr& req,
     info["du_energy"] = du_energy;
     info["success"] = success;
     info["time_done"] = time_done;
+    info["friction_scale"] = rl_friction_scale;
+    info["inertia_scale"] = rl_inertia_scale;
     out["info"] = info;
 
     callback(HttpResponse::newHttpJsonResponse(out));

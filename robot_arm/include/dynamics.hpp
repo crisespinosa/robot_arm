@@ -89,6 +89,19 @@ public:
 
     const ArmState& state() const { return state_; }
 
+    void setParamScales(double inertia_scale, double friction_scale) {
+        inertia_scale_ = std::clamp(inertia_scale, 0.2, 3.0);
+        friction_scale_ = std::clamp(friction_scale, 0.2, 3.0);
+    }
+
+    void resetParamScales() {
+        inertia_scale_ = 1.0;
+        friction_scale_ = 1.0;
+    }
+
+    double inertiaScale() const { return inertia_scale_; }
+    double frictionScale() const { return friction_scale_; }
+
     void setState(const std::vector<double>& q,
                   const std::vector<double>& dq) {
         assert(q.size() == dof_ && dq.size() == dof_);
@@ -160,25 +173,25 @@ private:
         // UR5e geometry: a2=0.425m, a3=0.3922m
         // Joint 1 (shoulder pan): vertical rotation, sees all distal mass
         //   Variation depends on shoulder lift angle q[1] (how extended the arm is)
-        M[0] = Jbase_[0] + Jvar_[0] * (1.0 + 0.22 * std::cos(q[1]));
+        M[0] = inertia_scale_ * (Jbase_[0] + Jvar_[0] * (1.0 + 0.22 * std::cos(q[1])));
 
         // Joint 2 (shoulder lift): heaviest — carries upper arm + forearm + wrists
         //   m2*a2^2/3 + (m3+m4+m5+m6)*a2^2 dominated by link 2 (8.393 kg)
         //   Depends on q[1] (upper arm angle) and q[1]+q[2] (elbow extension)
-        M[1] = Jbase_[1] + Jvar_[1] * (1.0 + 0.45 * std::cos(q[1]) + 0.30 * std::cos(q[1] + q[2]));
+        M[1] = inertia_scale_ * (Jbase_[1] + Jvar_[1] * (1.0 + 0.45 * std::cos(q[1]) + 0.30 * std::cos(q[1] + q[2])));
 
         // Joint 3 (elbow): carries forearm (2.275 kg) + wrists (2.63 kg)
         //   a3=0.3922m, depends on q[2] and combined q[1]+q[2]
-        M[2] = Jbase_[2] + Jvar_[2] * (1.0 + 0.55 * std::cos(q[2]) + 0.22 * std::cos(q[1] + q[2]));
+        M[2] = inertia_scale_ * (Jbase_[2] + Jvar_[2] * (1.0 + 0.55 * std::cos(q[2]) + 0.22 * std::cos(q[1] + q[2])));
 
         // Joint 4 (wrist 1): lightweight, d4=0.1333m, m4=1.219 kg
-        M[3] = Jbase_[3] + Jvar_[3] * (1.0 + 0.12 * std::cos(q[3]));
+        M[3] = inertia_scale_ * (Jbase_[3] + Jvar_[3] * (1.0 + 0.12 * std::cos(q[3])));
 
         // Joint 5 (wrist 2): d5=0.0997m, m5=1.219 kg
-        M[4] = Jbase_[4] + Jvar_[4] * (1.0 + 0.10 * std::cos(q[4]));
+        M[4] = inertia_scale_ * (Jbase_[4] + Jvar_[4] * (1.0 + 0.10 * std::cos(q[4])));
 
         // Joint 6 (wrist 3): lightest, d6=0.0996m, m6=0.1879 kg
-        M[5] = Jbase_[5] + Jvar_[5] * (1.0 + 0.08 * std::cos(q[5]));
+        M[5] = inertia_scale_ * (Jbase_[5] + Jvar_[5] * (1.0 + 0.08 * std::cos(q[5])));
 
         for (double& x : M) x = std::max(0.03, x);
         return M;
@@ -191,7 +204,7 @@ private:
 
         // --- Viscous + Coulomb friction ---
         for (size_t i = 0; i < dof_; ++i) {
-            n[i] += Bvisc_[i] * dq[i] + Fcoul_[i] * sgn_soft(dq[i]);
+            n[i] += friction_scale_ * (Bvisc_[i] * dq[i] + Fcoul_[i] * sgn_soft(dq[i]));
         }
 
         // --- Gravity (g = 9.81 m/s^2) ---
@@ -262,4 +275,6 @@ private:
 
     std::vector<double> Jbase_, Jvar_;
     std::vector<double> Bvisc_, Fcoul_;
+    double inertia_scale_{1.0};
+    double friction_scale_{1.0};
 };

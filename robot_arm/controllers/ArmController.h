@@ -68,6 +68,8 @@ private:
     std::vector<double> rl_last_tau_cmd_{std::vector<double>(6, 0.0)};
     std::vector<double> rl_q_start_{std::vector<double>(6, 0.0)};
     std::vector<double> rl_q_target_{std::vector<double>(6, 0.0)};
+    double rl_inertia_scale_{1.0};
+    double rl_friction_scale_{1.0};
 
     double rw_pos_{2.0};
     double rw_vel_{0.15};

@@ -194,9 +194,9 @@ def plot_time_series_comparison(fixed_results, ppo_results, output_dir):
     fig, axes = plt.subplots(3, 1, figsize=(10, 9), sharex=True)
 
     metrics = [
-        ("eq_rms", "Error de seguimiento (RMS)", "rad"),
-        ("u_energy", "Energía de control", "Nm²"),
-        ("du_energy", "Suavidad (variación de torque)", "Nm²/s²"),
+        ("eq_rms", "Tracking Error (RMS)", "rad"),
+        ("u_energy", "Control Energy", "Nm²"),
+        ("du_energy", "Torque Variation (Smoothness)", "Nm²/s²"),
     ]
 
     colors_fixed = '#d62728'  # red
@@ -224,19 +224,19 @@ def plot_time_series_comparison(fixed_results, ppo_results, output_dir):
         ppo_mean = np.nanmean(ppo_matrix, axis=0)
         ppo_std = np.nanstd(ppo_matrix, axis=0)
 
-        ax.plot(t, fixed_mean, color=colors_fixed, label='LQR fijo', linewidth=1.8)
+        ax.plot(t, fixed_mean, color=colors_fixed, label='Fixed LQR', linewidth=1.8)
         ax.fill_between(t, fixed_mean - fixed_std, fixed_mean + fixed_std,
                         color=colors_fixed, alpha=0.15)
 
-        ax.plot(t, ppo_mean, color=colors_ppo, label='PPO adaptativo', linewidth=1.8)
+        ax.plot(t, ppo_mean, color=colors_ppo, label='PPO Adaptive', linewidth=1.8)
         ax.fill_between(t, ppo_mean - ppo_std, ppo_mean + ppo_std,
                         color=colors_ppo, alpha=0.15)
 
         ax.set_ylabel(f"{title}\n[{unit}]")
         ax.legend(loc='upper right')
 
-    axes[-1].set_xlabel("Tiempo [s]")
-    fig.suptitle("Comparación temporal: LQR fijo vs PPO adaptativo", fontsize=14, y=1.01)
+    axes[-1].set_xlabel("Time [s]")
+    fig.suptitle("Time Series Comparison: Fixed LQR vs PPO Adaptive", fontsize=14, y=1.01)
     fig.tight_layout()
     fig.savefig(os.path.join(output_dir, "01_time_series_comparison.png"))
     fig.savefig(os.path.join(output_dir, "01_time_series_comparison.pdf"))
@@ -249,10 +249,10 @@ def plot_box_comparison(fixed_results, ppo_results, output_dir):
     fig, axes = plt.subplots(1, 4, figsize=(14, 4.5))
 
     metrics = [
-        ("final_eq_rms", "Error final\n(RMS rad)", 1.0),
-        ("total_reward", "Recompensa\ntotal", 1.0),
-        ("mean_u_energy", "Energía de control\npromedio (Nm²)", 1.0),
-        ("mean_du_energy", "Variación de torque\npromedio (Nm²/s²)", 1.0),
+        ("final_eq_rms", "Final Error\n(RMS rad)", 1.0),
+        ("total_reward", "Total\nReward", 1.0),
+        ("mean_u_energy", "Mean Control\nEnergy (Nm²)", 1.0),
+        ("mean_du_energy", "Mean Torque\nVariation (Nm²/s²)", 1.0),
     ]
 
     for ax, (key, label, scale) in zip(axes, metrics):
@@ -261,7 +261,7 @@ def plot_box_comparison(fixed_results, ppo_results, output_dir):
 
         bp = ax.boxplot(
             [fixed_vals, ppo_vals],
-            labels=["LQR\nfijo", "PPO\nadaptativo"],
+            labels=["Fixed\nLQR", "PPO\nAdaptive"],
             patch_artist=True,
             widths=0.5,
             medianprops=dict(color='black', linewidth=1.5),
@@ -272,7 +272,7 @@ def plot_box_comparison(fixed_results, ppo_results, output_dir):
         bp['boxes'][1].set_edgecolor('#1f77b4')
         ax.set_ylabel(label)
 
-    fig.suptitle("Distribución de métricas: LQR fijo vs PPO adaptativo",
+    fig.suptitle("Metric Distribution: Fixed LQR vs PPO Adaptive",
                  fontsize=14, y=1.02)
     fig.tight_layout()
     fig.savefig(os.path.join(output_dir, "02_box_comparison.png"))
@@ -303,46 +303,46 @@ def plot_single_trajectory(fixed_results, ppo_results, output_dir, episode_idx=0
 
     # Tracking error
     ax1 = fig.add_subplot(gs[0, 0])
-    ax1.plot(t_f, rf["eq_rms"], color='#d62728', label='LQR fijo', linewidth=1.8)
+    ax1.plot(t_f, rf["eq_rms"], color='#d62728', label='Fixed LQR', linewidth=1.8)
     ax1.plot(t_p, rp["eq_rms"], color='#1f77b4', label='PPO', linewidth=1.8)
-    ax1.set_ylabel("Error posición\n(RMS rad)")
-    ax1.set_title("Error de seguimiento")
+    ax1.set_ylabel("Position Error\n(RMS rad)")
+    ax1.set_title("Tracking Error")
     ax1.legend()
 
     # Velocity error
     ax2 = fig.add_subplot(gs[0, 1])
-    ax2.plot(t_f, rf["edq_rms"], color='#d62728', label='LQR fijo', linewidth=1.8)
+    ax2.plot(t_f, rf["edq_rms"], color='#d62728', label='Fixed LQR', linewidth=1.8)
     ax2.plot(t_p, rp["edq_rms"], color='#1f77b4', label='PPO', linewidth=1.8)
-    ax2.set_ylabel("Error velocidad\n(RMS rad/s)")
-    ax2.set_title("Error de velocidad")
+    ax2.set_ylabel("Velocity Error\n(RMS rad/s)")
+    ax2.set_title("Velocity Error")
     ax2.legend()
 
     # Torque energy
     ax3 = fig.add_subplot(gs[1, 0])
-    ax3.plot(t_f, rf["u_energy"], color='#d62728', label='LQR fijo', linewidth=1.8)
+    ax3.plot(t_f, rf["u_energy"], color='#d62728', label='Fixed LQR', linewidth=1.8)
     ax3.plot(t_p, rp["u_energy"], color='#1f77b4', label='PPO', linewidth=1.8)
-    ax3.set_ylabel("Energía control\n(Nm²)")
-    ax3.set_title("Esfuerzo de control")
+    ax3.set_ylabel("Control Energy\n(Nm²)")
+    ax3.set_title("Control Effort")
     ax3.legend()
 
     # Smoothness
     ax4 = fig.add_subplot(gs[1, 1])
-    ax4.plot(t_f, rf["du_energy"], color='#d62728', label='LQR fijo', linewidth=1.8)
+    ax4.plot(t_f, rf["du_energy"], color='#d62728', label='Fixed LQR', linewidth=1.8)
     ax4.plot(t_p, rp["du_energy"], color='#1f77b4', label='PPO', linewidth=1.8)
-    ax4.set_ylabel("Δτ energía\n(Nm²/s²)")
-    ax4.set_title("Suavidad del movimiento")
+    ax4.set_ylabel("Δτ Energy\n(Nm²/s²)")
+    ax4.set_title("Motion Smoothness")
     ax4.legend()
 
     # Per-joint torques (PPO)
     if len(rp["tau_cmd"]) > 0 and rp["tau_cmd"].ndim == 2:
         ax5 = fig.add_subplot(gs[2, 0])
-        joint_names = ["Base", "Hombro", "Codo", "Muñeca1", "Muñeca2", "Muñeca3"]
+        joint_names = ["Base", "Shoulder", "Elbow", "Wrist1", "Wrist2", "Wrist3"]
         for j in range(min(6, rp["tau_cmd"].shape[1])):
             ax5.plot(t_p[:len(rp["tau_cmd"])], rp["tau_cmd"][:, j],
                      label=joint_names[j], linewidth=1.2)
         ax5.set_ylabel("Torque (Nm)")
-        ax5.set_xlabel("Tiempo [s]")
-        ax5.set_title("Torques por articulación (PPO)")
+        ax5.set_xlabel("Time [s]")
+        ax5.set_title("Per-Joint Torques (PPO)")
         ax5.legend(fontsize=8, ncol=2)
 
     # PPO adaptive weights over time
@@ -352,13 +352,13 @@ def plot_single_trajectory(fixed_results, ppo_results, output_dir, episode_idx=0
         for j in range(min(5, rp["weights"].shape[1])):
             ax6.plot(t_p[:len(rp["weights"])], rp["weights"][:, j],
                      label=w_names[j], linewidth=1.2)
-        ax6.set_ylabel("Peso LQR")
-        ax6.set_xlabel("Tiempo [s]")
-        ax6.set_title("Pesos LQR adaptativos del PPO")
+        ax6.set_ylabel("LQR Weight")
+        ax6.set_xlabel("Time [s]")
+        ax6.set_title("PPO Adaptive LQR Weights")
         ax6.legend(fontsize=8, ncol=2)
 
-    fig.suptitle(f"Trayectoria detallada — Episodio {episode_idx+1}\n"
-                 f"(mayor ventaja del PPO)", fontsize=14)
+    fig.suptitle(f"Detailed Trajectory — Episode {episode_idx+1}\n"
+                 f"(highest PPO advantage)", fontsize=14)
     fig.savefig(os.path.join(output_dir, "03_single_trajectory_detail.png"))
     fig.savefig(os.path.join(output_dir, "03_single_trajectory_detail.pdf"))
     plt.close(fig)
@@ -381,31 +381,31 @@ def plot_success_and_improvement(fixed_results, ppo_results, output_dir):
     x = np.arange(n)
     width = 0.35
     axes[0].bar(x - width/2, fixed_errors, width, color='#d62728',
-                alpha=0.8, label='LQR fijo')
+                alpha=0.8, label='Fixed LQR')
     axes[0].bar(x + width/2, ppo_errors, width, color='#1f77b4',
-                alpha=0.8, label='PPO adaptativo')
-    axes[0].set_ylabel("Error final (RMS rad)")
-    axes[0].set_title("Error final por episodio")
+                alpha=0.8, label='PPO Adaptive')
+    axes[0].set_ylabel("Final Error (RMS rad)")
+    axes[0].set_title("Final Error per Episode")
     axes[0].set_xticks(x)
     axes[0].set_xticklabels([f"Ep{i+1}" for i in range(n)], fontsize=8)
     axes[0].legend()
     axes[0].axhline(y=0.03, color='green', linestyle='--', linewidth=1,
-                    label='Umbral éxito (0.03 rad)')
+                    label='Success Threshold (0.03 rad)')
     axes[0].legend()
 
     # Percentage improvement
     colors = ['#2ca02c' if v > 0 else '#d62728' for v in improvement_pct]
     axes[1].bar(x, improvement_pct, color=colors, alpha=0.8)
-    axes[1].set_ylabel("Mejora del PPO (%)")
-    axes[1].set_xlabel("Episodio")
-    axes[1].set_title("Porcentaje de reducción del error con PPO")
+    axes[1].set_ylabel("PPO Improvement (%)")
+    axes[1].set_xlabel("Episode")
+    axes[1].set_title("Percentage Error Reduction with PPO")
     axes[1].set_xticks(x)
     axes[1].set_xticklabels([f"Ep{i+1}" for i in range(n)], fontsize=8)
     axes[1].axhline(y=0, color='black', linewidth=0.8)
 
     avg_improvement = np.mean(improvement_pct)
     axes[1].axhline(y=avg_improvement, color='blue', linestyle='--', linewidth=1.2,
-                    label=f'Promedio: {avg_improvement:.1f}%')
+                    label=f'Average: {avg_improvement:.1f}%')
     axes[1].legend()
 
     fig.tight_layout()
@@ -418,15 +418,15 @@ def plot_success_and_improvement(fixed_results, ppo_results, output_dir):
 def print_summary_table(fixed_results, ppo_results):
     """Print statistical summary for the thesis."""
     metrics = {
-        "Error final (RMS rad)": ("final_eq_rms", "{:.4f}"),
-        "Recompensa total": ("total_reward", "{:.2f}"),
-        "Energía control media": ("mean_u_energy", "{:.2f}"),
-        "Variación torque media": ("mean_du_energy", "{:.4f}"),
-        "Tasa de éxito": ("success", "{:.1%}"),
+        "Final Error (RMS rad)": ("final_eq_rms", "{:.4f}"),
+        "Total Reward": ("total_reward", "{:.2f}"),
+        "Mean Control Energy": ("mean_u_energy", "{:.2f}"),
+        "Mean Torque Variation": ("mean_du_energy", "{:.4f}"),
+        "Success Rate": ("success", "{:.1%}"),
     }
 
     print("\n" + "=" * 75)
-    print(f"{'Métrica':<28} {'LQR fijo':>14} {'PPO adaptativo':>16} {'Mejora':>12}")
+    print(f"{'Metric':<28} {'Fixed LQR':>14} {'PPO Adaptive':>16} {'Improvement':>12}")
     print("=" * 75)
 
     for name, (key, fmt) in metrics.items():
@@ -453,8 +453,8 @@ def print_summary_table(fixed_results, ppo_results):
     # Standard deviations
     fixed_eq = [r["final_eq_rms"] for r in fixed_results]
     ppo_eq = [r["final_eq_rms"] for r in ppo_results]
-    print(f"\n  Error final σ:  LQR={np.std(fixed_eq):.4f}  PPO={np.std(ppo_eq):.4f}")
-    print(f"  Episodios:      {len(fixed_results)}")
+    print(f"\n  Final error σ:  LQR={np.std(fixed_eq):.4f}  PPO={np.std(ppo_eq):.4f}")
+    print(f"  Episodes:       {len(fixed_results)}")
 
 
 def save_csv_results(fixed_results, ppo_results, output_dir):
@@ -503,22 +503,22 @@ def main():
     os.makedirs(args.output_dir, exist_ok=True)
 
     print("=" * 60)
-    print("  Comparación: LQR fijo vs PPO adaptativo")
+    print("  Comparison: Fixed LQR vs PPO Adaptive")
     print("=" * 60)
-    print(f"  Modelo PPO: {args.model}")
-    print(f"  Episodios:  {args.episodes}")
-    print(f"  Salida:     {args.output_dir}/")
+    print(f"  PPO Model:  {args.model}")
+    print(f"  Episodes:   {args.episodes}")
+    print(f"  Output:     {args.output_dir}/")
     print("=" * 60)
 
     # Load model
-    print(f"\nCargando modelo PPO...")
+    print(f"\nLoading PPO model...")
     model = PPO.load(args.model)
 
     # Backend
     backend = RobotArmBackendEnv(base_url=args.url)
 
     # Run comparison
-    print(f"\nEjecutando {args.episodes} episodios comparativos...\n")
+    print(f"\nRunning {args.episodes} comparison episodes...\n")
     fixed_results, ppo_results = run_comparison(
         backend, model, args.episodes, args.T, args.dt, args.mode, args.N, args.seed
     )
@@ -527,14 +527,14 @@ def main():
     print_summary_table(fixed_results, ppo_results)
 
     # Generate plots
-    print(f"\nGenerando gráficas en {args.output_dir}/...\n")
+    print(f"\nGenerating plots in {args.output_dir}/...\n")
     plot_time_series_comparison(fixed_results, ppo_results, args.output_dir)
     plot_box_comparison(fixed_results, ppo_results, args.output_dir)
     plot_single_trajectory(fixed_results, ppo_results, args.output_dir)
     plot_success_and_improvement(fixed_results, ppo_results, args.output_dir)
     save_csv_results(fixed_results, ppo_results, args.output_dir)
 
-    print(f"\n¡Listo! Todos los resultados guardados en: {args.output_dir}/")
+    print(f"\nDone! All results saved to: {args.output_dir}/")
     print("Archivos generados:")
     print("  - 01_time_series_comparison.png/pdf")
     print("  - 02_box_comparison.png/pdf")

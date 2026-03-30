@@ -35,9 +35,9 @@ from env_backend_robot_arm import RobotArmBackendEnv
 
 class Perturbation:
     """Base class for perturbations."""
-    def __init__(self, name, label_es):
+    def __init__(self, name, label):
         self.name = name
-        self.label_es = label_es
+        self.label = label
 
     def perturb_action(self, action, step, total_steps):
         return action
@@ -48,13 +48,13 @@ class Perturbation:
 
 class NoPerturbation(Perturbation):
     def __init__(self):
-        super().__init__("none", "Sin perturbación")
+        super().__init__("none", "No perturbation")
 
 
 class TorqueNoise(Perturbation):
     """Adds Gaussian noise to actions, simulating actuator imprecision."""
     def __init__(self, noise_std=0.15):
-        super().__init__("torque_noise", f"Ruido de actuador (σ={noise_std})")
+        super().__init__("torque_noise", f"Actuator Noise (σ={noise_std})")
         self.noise_std = noise_std
 
     def perturb_action(self, action, step, total_steps):
@@ -66,7 +66,7 @@ class PayloadChange(Perturbation):
     """Simulates picking up a payload mid-trajectory by biasing actions."""
     def __init__(self, bias_magnitude=0.25, onset_fraction=0.4):
         super().__init__("payload",
-                         f"Cambio de carga (bias={bias_magnitude}, inicio={int(onset_fraction*100)}%)")
+                         f"Payload Change (bias={bias_magnitude}, onset={int(onset_fraction*100)}%)")
         self.bias = bias_magnitude
         self.onset = onset_fraction
 
@@ -82,7 +82,7 @@ class PayloadChange(Perturbation):
 class SensorNoise(Perturbation):
     """Adds noise to observations, simulating sensor inaccuracies."""
     def __init__(self, noise_std=0.02):
-        super().__init__("sensor_noise", f"Ruido de sensores (σ={noise_std})")
+        super().__init__("sensor_noise", f"Sensor Noise (σ={noise_std})")
         self.noise_std = noise_std
 
     def perturb_obs(self, obs, step, total_steps):
@@ -94,7 +94,7 @@ class ImpulsePerturbation(Perturbation):
     """Simulates a sudden impulse/collision at a random time."""
     def __init__(self, impulse_magnitude=0.4, duration_steps=5):
         super().__init__("impulse",
-                         f"Impulso externo (mag={impulse_magnitude})")
+                         f"External Impulse (mag={impulse_magnitude})")
         self.magnitude = impulse_magnitude
         self.duration = duration_steps
         self.impulse_start = None
@@ -114,7 +114,7 @@ class ImpulsePerturbation(Perturbation):
 class CombinedPerturbation(Perturbation):
     """Combines torque noise + sensor noise + payload change."""
     def __init__(self):
-        super().__init__("combined", "Perturbaciones combinadas")
+        super().__init__("combined", "Combined Perturbations")
         self.torque = TorqueNoise(noise_std=0.10)
         self.sensor = SensorNoise(noise_std=0.015)
         self.payload = PayloadChange(bias_magnitude=0.15, onset_fraction=0.4)
@@ -227,14 +227,14 @@ def run_full_comparison(backend, models, configs, perturbations, T, dt, mode, N)
 
         for model_name, model in models.items():
             results[pert.name][model_name] = []
-            print(f"\n  [{pert.label_es}] {model_name}:")
+            print(f"\n  [{pert.label}] {model_name}:")
 
             for ep, (q_start, q_target) in enumerate(configs):
                 # Reset perturbation state per episode
                 if hasattr(pert, 'impulse_start'):
                     pert.impulse_start = None
 
-                if model_name == "LQR fijo":
+                if model_name == "Fixed LQR":
                     traj = run_episode_perturbed(
                         backend, q_start, q_target, T, dt, mode, N,
                         fixed_action=np.zeros(5, dtype=np.float32),
@@ -277,7 +277,7 @@ def plot_robustness_summary(results, perturbation_names, model_names, output_dir
     fig, axes = plt.subplots(1, 3, figsize=(15, 5.5))
 
     colors = {
-        "LQR fijo": '#d62728',
+        "Fixed LQR": '#d62728',
         "PPO v1": '#ff7f0e',
         "PPO v2": '#1f77b4',
     }
@@ -297,8 +297,8 @@ def plot_robustness_summary(results, perturbation_names, model_names, output_dir
                      vals, width, yerr=stds,
                      color=colors.get(mn, f'C{i}'), alpha=0.85,
                      label=mn, capsize=3)
-    axes[0].set_ylabel("Error final (RMS rad)")
-    axes[0].set_title("Precisión bajo perturbaciones")
+    axes[0].set_ylabel("Final Error (RMS rad)")
+    axes[0].set_title("Precision under Perturbations")
     axes[0].set_xticks(x)
     axes[0].axhline(y=0.03, color='green', linestyle='--', linewidth=1, alpha=0.5)
     axes[0].legend()
@@ -313,8 +313,8 @@ def plot_robustness_summary(results, perturbation_names, model_names, output_dir
                      vals, width,
                      color=colors.get(mn, f'C{i}'), alpha=0.85,
                      label=mn)
-    axes[1].set_ylabel("Tasa de éxito (%)")
-    axes[1].set_title("Éxito bajo perturbaciones")
+    axes[1].set_ylabel("Success Rate (%)")
+    axes[1].set_title("Success under Perturbations")
     axes[1].set_xticks(x)
     axes[1].set_ylim(0, 105)
     axes[1].legend()
@@ -329,25 +329,25 @@ def plot_robustness_summary(results, perturbation_names, model_names, output_dir
                      vals, width,
                      color=colors.get(mn, f'C{i}'), alpha=0.85,
                      label=mn)
-    axes[2].set_ylabel("Recompensa total")
-    axes[2].set_title("Recompensa bajo perturbaciones")
+    axes[2].set_ylabel("Total Reward")
+    axes[2].set_title("Reward under Perturbations")
     axes[2].set_xticks(x)
     axes[2].legend()
 
     # x-axis labels
     pert_labels_short = {
         "none": "Sin\npert.",
-        "torque_noise": "Ruido\nactuador",
-        "sensor_noise": "Ruido\nsensor",
-        "payload": "Cambio\ncarga",
-        "impulse": "Impulso\nexterno",
-        "combined": "Combinadas",
+        "torque_noise": "Actuator\nNoise",
+        "sensor_noise": "Sensor\nNoise",
+        "payload": "Payload\nChange",
+        "impulse": "External\nImpulse",
+        "combined": "Combined",
     }
     for ax in axes:
         ax.set_xticklabels([pert_labels_short.get(pn, pn) for pn in perturbation_names],
                            fontsize=9)
 
-    fig.suptitle("Robustez: LQR fijo vs PPO adaptativo bajo perturbaciones",
+    fig.suptitle("Robustness: Fixed LQR vs PPO Adaptive under Perturbations",
                  fontsize=14, y=1.02)
     fig.tight_layout()
     fig.savefig(os.path.join(output_dir, "05_robustness_summary.png"))
@@ -361,11 +361,11 @@ def plot_degradation_curves(results, perturbation_names, model_names, output_dir
     fig, ax = plt.subplots(figsize=(10, 5.5))
 
     colors = {
-        "LQR fijo": '#d62728',
+        "Fixed LQR": '#d62728',
         "PPO v1": '#ff7f0e',
         "PPO v2": '#1f77b4',
     }
-    markers = {"LQR fijo": 's', "PPO v1": '^', "PPO v2": 'o'}
+    markers = {"Fixed LQR": 's', "PPO v1": '^', "PPO v2": 'o'}
 
     for mn in model_names:
         means = []
@@ -382,20 +382,20 @@ def plot_degradation_curves(results, perturbation_names, model_names, output_dir
                      label=mn)
 
     ax.axhline(y=0.03, color='green', linestyle='--', linewidth=1,
-               alpha=0.5, label='Umbral éxito')
+               alpha=0.5, label='Success Threshold')
 
     pert_labels = {
-        "none": "Sin pert.",
-        "torque_noise": "Ruido\nactuador",
-        "sensor_noise": "Ruido\nsensor",
-        "payload": "Cambio\ncarga",
-        "impulse": "Impulso",
-        "combined": "Combinadas",
+        "none": "No Pert.",
+        "torque_noise": "Actuator\nNoise",
+        "sensor_noise": "Sensor\nNoise",
+        "payload": "Payload\nChange",
+        "impulse": "Impulse",
+        "combined": "Combined",
     }
     ax.set_xticks(range(len(perturbation_names)))
     ax.set_xticklabels([pert_labels.get(pn, pn) for pn in perturbation_names])
-    ax.set_ylabel("Error final promedio (RMS rad)")
-    ax.set_title("Curva de degradación: error vs tipo de perturbación")
+    ax.set_ylabel("Mean Final Error (RMS rad)")
+    ax.set_title("Degradation Curve: Error vs Perturbation Type")
     ax.legend(loc='upper left')
     fig.tight_layout()
     fig.savefig(os.path.join(output_dir, "06_degradation_curves.png"))
@@ -409,7 +409,7 @@ def plot_time_series_perturbed(results, perturbation_name, model_names, output_d
     fig, ax = plt.subplots(figsize=(10, 5))
 
     colors = {
-        "LQR fijo": '#d62728',
+        "Fixed LQR": '#d62728',
         "PPO v1": '#ff7f0e',
         "PPO v2": '#1f77b4',
     }
@@ -432,8 +432,8 @@ def plot_time_series_perturbed(results, perturbation_name, model_names, output_d
 
     ax.axhline(y=0.03, color='green', linestyle='--', linewidth=1, alpha=0.5)
     ax.set_xlabel("Tiempo [s]")
-    ax.set_ylabel("Error de seguimiento (RMS rad)")
-    ax.set_title(f"Error temporal bajo perturbaciones combinadas")
+    ax.set_ylabel("Tracking Error (RMS rad)")
+    ax.set_title(f"Time Series Error under Combined Perturbations")
     ax.legend()
     fig.tight_layout()
     fig.savefig(os.path.join(output_dir, "07_time_series_combined_perturbation.png"))
@@ -503,7 +503,7 @@ def main():
     os.makedirs(args.output_dir, exist_ok=True)
 
     print("=" * 60)
-    print("  Comparación con perturbaciones")
+    print("  Comparison with Perturbations")
     print("=" * 60)
     print(f"  Episodios:  {args.episodes}")
     print(f"  Modelo v1:  {args.model_v1}")
@@ -511,7 +511,7 @@ def main():
     print("=" * 60)
 
     # Load models
-    models = {"LQR fijo": None}
+    models = {"Fixed LQR": None}
 
     if os.path.exists(args.model_v1):
         print(f"Cargando PPO v1: {args.model_v1}")
@@ -542,14 +542,14 @@ def main():
     model_names = list(models.keys())
 
     # Run all comparisons
-    print(f"\nEjecutando {args.episodes} episodios × {len(perturbations)} perturbaciones × {len(models)} modelos...")
+    print(f"\nRunning {args.episodes} episodes × {len(perturbations)} perturbations × {len(models)} models...")
     results = run_full_comparison(
         backend, models, configs, perturbations,
         args.T, args.dt, args.mode, args.N
     )
 
     # Results table
-    pert_labels = {p.name: p.label_es for p in perturbations}
+    pert_labels = {p.name: p.label for p in perturbations}
     print_full_table(results, pert_names, model_names, pert_labels)
 
     # Plots

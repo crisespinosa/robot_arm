@@ -49,6 +49,14 @@ public class Ur5ePPOController : MonoBehaviour
     [SerializeField] private bool lastSuccess = false;
     [SerializeField] private float lastEqRms = 0f;
 
+    // ── Public getters for UI panel ──
+    public bool  GetEpisodeActive() => episodeActive;
+    public int   GetStepCount()     => stepCount;
+    public float GetCurrentReward() => currentReward;
+    public float GetTotalReward()   => totalReward;
+    public bool  GetLastSuccess()   => lastSuccess;
+    public float GetLastEqRms()     => lastEqRms;
+
     // Internal state
     private float[] currentObs;
     private bool waitingForResponse = false;

@@ -27,7 +27,10 @@
 
 #include <algorithm>
 #include <array>
+#include <chrono>
 #include <cmath>
+#include <fstream>
+#include <iomanip>
 #include <iostream>
 #include <memory>
 #include <string>
@@ -1265,6 +1268,61 @@ void ArmController::handleRLReset(const HttpRequestPtr& req,
     RefSample ref0 = sample_ref_from_traj(ref_traj_, 0.0, dt);
     std::vector<double> obs = build_obs(q_start6, std::vector<double>(6, 0.0), ref0, 0.0, T);
 
+    // ============================================================
+    // Сброс метрик эпизода и расчёт характеристик плана PMP
+    // ============================================================
+    ep_metrics_ = EpisodeMetrics{};
+    ep_metrics_.ref_T = T;
+    {
+        // Характеристики плана PMP, вычисляются один раз при reset.
+        // Не зависят от трекера — оценивают качество ТОЛЬКО планировщика.
+        double ref_max_dq      = 0.0;
+        double ref_max_ddq     = 0.0;
+        double ref_jerk_energy = 0.0;
+        double ref_path_length = 0.0;
+        for (const auto& pt : ref_traj_) {
+            for (int i = 0; i < 6; ++i) {
+                if (i < (int)pt.dq.size()) {
+                    const double v = std::abs(pt.dq[i]);
+                    if (v > ref_max_dq) ref_max_dq = v;
+                    ref_path_length += v * dt;
+                }
+                if (i < (int)pt.ddq.size()) {
+                    const double a = std::abs(pt.ddq[i]);
+                    if (a > ref_max_ddq) ref_max_ddq = a;
+                }
+                if (i < (int)pt.u.size()) {
+                    // pt.u содержит jerk (минимизируемая величина в PMP minimum-jerk)
+                    ref_jerk_energy += pt.u[i] * pt.u[i] * dt;
+                }
+            }
+        }
+        ep_metrics_.ref_max_dq      = ref_max_dq;
+        ep_metrics_.ref_max_ddq     = ref_max_ddq;
+        ep_metrics_.ref_jerk_energy = ref_jerk_energy;
+        ep_metrics_.ref_path_length = ref_path_length;
+    }
+
+    // Открываем CSV-лог эпизода (имя по timestamp, уникальное на эпизод)
+    if (csv_log_enabled_) {
+        if (csv_log_.is_open()) csv_log_.close();
+        const auto now = std::chrono::system_clock::now().time_since_epoch();
+        const long long ms =
+            std::chrono::duration_cast<std::chrono::milliseconds>(now).count();
+        const std::string fname = "episode_" + std::to_string(ms) + ".csv";
+        csv_log_.open(fname);
+        if (csv_log_.is_open()) {
+            csv_log_ << "t,eq_rms,edq_rms,u_energy,J_step,reward,success";
+            for (int i = 0; i < 6; ++i) csv_log_ << ",q_real"   << i;
+            for (int i = 0; i < 6; ++i) csv_log_ << ",dq_real"  << i;
+            for (int i = 0; i < 6; ++i) csv_log_ << ",q_ref"    << i;
+            for (int i = 0; i < 6; ++i) csv_log_ << ",dq_ref"   << i;
+            for (int i = 0; i < 6; ++i) csv_log_ << ",eq"       << i;
+            for (int i = 0; i < 6; ++i) csv_log_ << ",tau"      << i;
+            csv_log_ << "\n";
+        }
+    }
+
     Json::Value out(Json::objectValue);
     out["ok"] = true;
     out["obs"] = to_json_array(obs);
@@ -1471,6 +1529,69 @@ void ArmController::handleRLStep(const HttpRequestPtr& req,
     bool success = time_done && (eq_rms_next <= success_tol);
     if (success) reward += rw_success;
 
+    // ============================================================
+    // Обновление метрик эпизода для тезиса
+    // ============================================================
+    // Используем РЕАЛЬНОЕ состояние манипулятора из dyn_.state()
+    // (после интеграции stepWithTorque внутри compute_control_step).
+    // J_step считается в векторной форме по суставам:
+    //     J_step = (Σ_i wq·eq_i² + Σ_i wdq·edq_i² + Σ_i wu·τ_i²) · dt
+    {
+        const auto&  st_real = dyn_.state();
+        const auto&  q_real  = st_real.q;
+        const auto&  dq_real = st_real.dq;
+        const double dt_step = dt_ref;
+
+        // Векторные ошибки по суставам (реальное состояние против плана PMP)
+        std::array<double, 6> eq_vec{}, edq_vec{};
+        double sum_eq_sq_step  = 0.0;
+        double sum_edq_sq_step = 0.0;
+        double sum_tau_sq_step = 0.0;
+        for (int i = 0; i < 6; ++i) {
+            eq_vec[i]  = q_real[i]  - ref_next.q[i];
+            edq_vec[i] = dq_real[i] - ref_next.dq[i];
+            sum_eq_sq_step  += eq_vec[i]  * eq_vec[i];
+            sum_edq_sq_step += edq_vec[i] * edq_vec[i];
+            sum_tau_sq_step += ctrl.tau_cmd[i] * ctrl.tau_cmd[i];
+
+            const double abs_eq_i = std::abs(eq_vec[i]);
+            if (abs_eq_i > ep_metrics_.max_abs_eq) ep_metrics_.max_abs_eq = abs_eq_i;
+        }
+
+        // Квадратичная стоимость LQR (векторная форма по суставам)
+        const double J_step =
+            (weights_vec[0] * sum_eq_sq_step   // eqᵀ Q  eq
+           + weights_vec[1] * sum_edq_sq_step  // edqᵀ Qd edq
+           + weights_vec[2] * sum_tau_sq_step  // τᵀ  R  τ
+            ) * dt_step;
+
+        ep_metrics_.sum_eq_sq    += sum_eq_sq_step;
+        ep_metrics_.sum_edq_sq   += sum_edq_sq_step;
+        ep_metrics_.sum_u_sq_dt  += sum_tau_sq_step * dt_step;
+        ep_metrics_.sum_J        += J_step;
+        ep_metrics_.n_samples    += 1;
+        ep_metrics_.reward_total += reward;
+
+        // Построчный CSV-лог (по одному шагу на строку)
+        if (csv_log_enabled_ && csv_log_.is_open()) {
+            csv_log_ << std::fixed << std::setprecision(6)
+                     << t_next       << ','
+                     << eq_rms_next  << ','
+                     << edq_rms_next << ','
+                     << u_energy     << ','
+                     << J_step       << ','
+                     << reward       << ','
+                     << (success ? 1 : 0);
+            for (int i = 0; i < 6; ++i) csv_log_ << ',' << q_real[i];
+            for (int i = 0; i < 6; ++i) csv_log_ << ',' << dq_real[i];
+            for (int i = 0; i < 6; ++i) csv_log_ << ',' << ref_next.q[i];
+            for (int i = 0; i < 6; ++i) csv_log_ << ',' << ref_next.dq[i];
+            for (int i = 0; i < 6; ++i) csv_log_ << ',' << eq_vec[i];
+            for (int i = 0; i < 6; ++i) csv_log_ << ',' << ctrl.tau_cmd[i];
+            csv_log_ << '\n';
+        }
+    }
+
     int next_step_count = step_count + 1;
     bool truncated = next_step_count >= max_steps;
     bool done = success || time_done || truncated;
@@ -1484,6 +1605,50 @@ void ArmController::handleRLStep(const HttpRequestPtr& req,
         rl_step_count_ = next_step_count;
         rl_last_tau_cmd_ = ctrl.tau_cmd;
         if (done) rl_active_ = false;
+    }
+
+    // ============================================================
+    // Финализация эпизода: печать сводки и закрытие CSV
+    // ============================================================
+    if (done) {
+        ep_metrics_.eq_final = eq_rms_next;
+        ep_metrics_.success  = success;
+
+        const int    N = std::max(1, ep_metrics_.n_samples);
+        // eq_rms_global и edq_rms_global усредняются по (N · 6)
+        // потому что sum_eq_sq уже суммирует по 6 суставам на каждом шаге.
+        const double eq_rms_global  = std::sqrt(ep_metrics_.sum_eq_sq  / (N * 6.0));
+        const double edq_rms_global = std::sqrt(ep_metrics_.sum_edq_sq / (N * 6.0));
+
+        std::cout
+            << "\n========== EPISODE METRICS ==========\n"
+            << "  steps             : " << N << "\n"
+            << "  mode              : " << mode << "\n"
+            << "  weights (wq/wdq/wu): "
+                << weights_vec[0] << " / "
+                << weights_vec[1] << " / "
+                << weights_vec[2] << "\n"
+            << "  --- Tracker (real state vs PMP) ---\n"
+            << "  eq_rms_global     : " << eq_rms_global    << " rad\n"
+            << "  edq_rms_global    : " << edq_rms_global   << " rad/s\n"
+            << "  max_abs_eq        : " << ep_metrics_.max_abs_eq << " rad\n"
+            << "  eq_final          : " << ep_metrics_.eq_final   << " rad\n"
+            << "  u_energy_total    : " << ep_metrics_.sum_u_sq_dt << " Nm^2*s\n"
+            << "  J_total (LQR)     : " << ep_metrics_.sum_J       << "\n"
+            << "  reward_total      : " << ep_metrics_.reward_total << "\n"
+            << "  success           : " << (success ? "YES" : "no") << "\n"
+            << "  --- PMP plan ---\n"
+            << "  T_plan            : " << ep_metrics_.ref_T        << " s\n"
+            << "  ref_max_|dq|      : " << ep_metrics_.ref_max_dq   << " rad/s\n"
+            << "  ref_max_|ddq|     : " << ep_metrics_.ref_max_ddq  << " rad/s^2\n"
+            << "  jerk_energy       : " << ep_metrics_.ref_jerk_energy << "\n"
+            << "  path_length       : " << ep_metrics_.ref_path_length << " rad\n"
+            << "  --- Domain randomization ---\n"
+            << "  friction_scale    : " << rl_friction_scale << "\n"
+            << "  inertia_scale     : " << rl_inertia_scale  << "\n"
+            << "=====================================\n" << std::endl;
+
+        if (csv_log_.is_open()) csv_log_.close();
     }
 
     Json::Value out(Json::objectValue);

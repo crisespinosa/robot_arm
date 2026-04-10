@@ -15,10 +15,11 @@
  */
 
 #include <drogon/HttpController.h>
+#include <fstream>
 #include <functional>
 #include <mutex>
-#include <vector>
 #include <string>
+#include <vector>
 
 #include "dynamics.hpp"    // ArmDynamics — модель динамики UR5e
 #include "trajectory.hpp"  // PMPPoint, plan_pmp_minimum_jerk — планирование траекторий
@@ -110,4 +111,36 @@ private:
     double rw_u_{0.002};      ///< Вес энергии управления (β_u)
     double rw_du_{0.0005};    ///< Вес изменения управления (β_Δu)
     double rw_success_{5.0};  ///< Бонус за успешное достижение цели
+
+    // ============================================================
+    // Метрики эпизода для тезиса
+    // ============================================================
+    //
+    // Все ошибки отслеживания считаются между РЕАЛЬНЫМ состоянием
+    // манипулятора (dyn_.state()) и опорной траекторией PMP.
+    // J_total вычисляется в векторной форме по суставам:
+    //     J_step = (Σ_i wq·eq_i² + Σ_i wdq·edq_i² + Σ_i wu·tau_i²) · dt
+    // ------------------------------------------------------------
+    struct EpisodeMetrics {
+        // --- Tracker (зависят от реального состояния q_real, dq_real) ---
+        double sum_eq_sq    {0.0};   ///< Σ ‖eq‖²  (сумма квадратов по всем суставам и шагам)
+        double sum_edq_sq   {0.0};   ///< Σ ‖edq‖²
+        double sum_u_sq_dt  {0.0};   ///< ∫‖τ‖²dt (энергия управления)
+        double sum_J        {0.0};   ///< ∫(eqᵀQ eq + edqᵀQd edq + τᵀR τ) dt (LQR-стоимость)
+        double max_abs_eq   {0.0};   ///< пиковая |eq_i| по всем суставам и шагам
+        int    n_samples    {0};     ///< число шагов
+        double eq_final     {0.0};   ///< RMS ошибки положения на последнем шаге
+        double reward_total {0.0};   ///< сумма reward PPO
+        bool   success      {false}; ///< eq_final ≤ success_tol и time_done
+
+        // --- PMP план (не зависят от трекера) ---
+        double ref_T           {0.0};  ///< длительность плана (с)
+        double ref_max_dq      {0.0};  ///< пик ‖dq_ref‖∞ на всём плане
+        double ref_max_ddq     {0.0};  ///< пик ‖ddq_ref‖∞
+        double ref_jerk_energy {0.0};  ///< ∫‖jerk_ref‖² dt (критерий minimum-jerk)
+        double ref_path_length {0.0};  ///< ∫‖dq_ref‖₁ dt (длина пути в пространстве суставов)
+    };
+    EpisodeMetrics ep_metrics_{};     ///< метрики текущего эпизода
+    bool           csv_log_enabled_{true};  ///< писать ли пошаговый лог CSV
+    std::ofstream  csv_log_;          ///< файл CSV текущего эпизода
 };

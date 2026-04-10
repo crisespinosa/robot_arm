@@ -23,7 +23,14 @@ public class Ur5eTrajectoryClientQ : MonoBehaviour
     [Header("Applier (must have q1..q6 assigned)")]
     public ApplyJointAngles6 applier;
 
+    [Header("Experiment Logger (optional)")]
+    public ExperimentLogger logger;
+
     Coroutine playRoutine;
+
+    // Guardamos para pasarle al logger
+    float[] lastQTarget;
+    float[] lastQStart;
 
     // ---------- JSON ----------
     [System.Serializable]
@@ -132,17 +139,19 @@ public class Ur5eTrajectoryClientQ : MonoBehaviour
 
         float[] qStartRad = GetUnityCurrentQRad();
 
+        // Guardar para el logger
+        lastQTarget = (float[])qTargetRad.Clone();
+        lastQStart = (float[])qStartRad.Clone();
+
         var bodyObj = new PlanQRequest
         {
             q_target = qTargetRad,
-            q_start = qStartRad,   
+            q_start = qStartRad,
             T = T,
             dt = dt
         };
 
         string bodyJson = JsonConvert.SerializeObject(bodyObj);
-        Debug.Log("[TrajectoryClientQ] POST " + url);
-        Debug.Log("[TrajectoryClientQ] body=" + bodyJson);
 
         using var req = new UnityWebRequest(url, "POST");
         req.uploadHandler = new UploadHandlerRaw(System.Text.Encoding.UTF8.GetBytes(bodyJson));
@@ -160,7 +169,6 @@ public class Ur5eTrajectoryClientQ : MonoBehaviour
         }
 
         string raw = req.downloadHandler.text;
-        Debug.Log("[TrajectoryClientQ] got response, len=" + raw.Length);
 
         TrajResponse resp;
         try
@@ -180,20 +188,13 @@ public class Ur5eTrajectoryClientQ : MonoBehaviour
             yield break;
         }
 
-   
-        Debug.Log($"FIRST q: {resp.trajectory[0].q[0]}, {resp.trajectory[0].q[1]}, {resp.trajectory[0].q[2]} ...");
-
- 
-        if (resp.q_start_used != null && resp.q_start_used.Length >= 2)
-            Debug.Log($"[TrajectoryClientQ] backend q_start_used: {resp.q_start_used[0]:F3}, {resp.q_start_used[1]:F3}");
-
         playRoutine = StartCoroutine(PlayTrajectory(resp));
     }
 
     IEnumerator PlayTrajectory(TrajResponse resp)
     {
         int n = resp.trajectory.Count;
-        Debug.Log($"[TrajectoryClientQ] Playing trajectory ({n} points)");
+        // Debug.Log($"[TrajectoryClientQ] Playing trajectory ({n} points)");
 
         for (int i = 0; i < n; i++)
         {
@@ -217,6 +218,12 @@ public class Ur5eTrajectoryClientQ : MonoBehaviour
         }
 
         playRoutine = null;
-        Debug.Log("[TrajectoryClientQ] Playback finished");
+        // Debug.Log("[TrajectoryClientQ] Playback finished");
+
+        // Notificar al logger si está asignado
+        if (logger != null && lastQTarget != null && lastQStart != null)
+        {
+            logger.OnTrajectoryFinished(lastQTarget, lastQStart, T, dt);
+        }
     }
 }

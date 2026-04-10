@@ -13,7 +13,7 @@ public class ApplyJointAngles6 : MonoBehaviour
     public float forceLimit = 1000f;
 
     [Header("Debug")]
-    public bool debugMappingOnStart = true;
+    public bool debugMappingOnStart = false;
 
     public float[] LastQRad { get; private set; } = new float[6];
 

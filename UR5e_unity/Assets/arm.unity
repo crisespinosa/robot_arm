@@ -1194,6 +1194,7 @@ GameObject:
   - component: {fileID: 318251315}
   - component: {fileID: 318251314}
   - component: {fileID: 318251316}
+  - component: {fileID: 318251317}
   m_Layer: 0
   m_Name: Ur5eController
   m_TagString: Untagged
@@ -1308,6 +1309,19 @@ MonoBehaviour:
   totalReward: 0
   lastSuccess: 0
   lastEqRms: 0
+--- !u!114 &318251317
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 318251311}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 860134869b5452d47bfbbd576fefe54f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  controller: {fileID: 318251316}
 --- !u!4 &389586051 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 178482377305253602, guid: eb3d8d82f307b894ba5bfd591b628ca3, type: 3}

@@ -37,7 +37,7 @@ public class Ur5eSliderHandles : MonoBehaviour
     public float stepRad = 0.01f;
 
     [Header("Debug")]
-    public bool debugOnStart = true;
+    public bool debugOnStart = false;
 
     private float[] homeRad = new float[6];
     private bool homeCaptured = false;

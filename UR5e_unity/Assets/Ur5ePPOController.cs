@@ -41,6 +41,9 @@ public class Ur5ePPOController : MonoBehaviour
     [Header("Components")]
     public ApplyJointAngles6 applier;
 
+    [Header("Experiment Logger (optional)")]
+    public ExperimentLogger logger;
+
     [Header("Status")]
     [SerializeField] private bool episodeActive = false;
     [SerializeField] private int stepCount = 0;
@@ -148,7 +151,7 @@ public class Ur5ePPOController : MonoBehaviour
     {
         if (episodeActive)
         {
-            Debug.LogWarning("[PPOController] Episode already active. Stopping first.");
+            // Debug.LogWarning("[PPOController] Episode already active. Stopping first.");
             StopEpisode();
         }
 
@@ -181,7 +184,7 @@ public class Ur5ePPOController : MonoBehaviour
         }
         episodeActive = false;
         waitingForResponse = false;
-        Debug.Log("[PPOController] Episode stopped.");
+        // Debug.Log("[PPOController] Episode stopped.");
     }
 
     // Keyboard controls: P = start episode, O = stop episode
@@ -189,12 +192,10 @@ public class Ur5ePPOController : MonoBehaviour
     {
         if (Input.GetKeyDown(KeyCode.P) && !episodeActive)
         {
-            Debug.Log("[PPOController] Tecla P presionada -> Iniciando episodio PPO");
             StartEpisode();
         }
         if (Input.GetKeyDown(KeyCode.O) && episodeActive)
         {
-            Debug.Log("[PPOController] Tecla O presionada -> Deteniendo episodio");
             StopEpisode();
         }
     }
@@ -278,6 +279,13 @@ public class Ur5ePPOController : MonoBehaviour
                 string result = lastSuccess ? "SUCCESS" : "TIMEOUT";
                 Debug.Log($"[PPOController] Episode done: {result}, steps={stepCount}, " +
                           $"reward={totalReward:F2}, eq_rms={lastEqRms:F4}");
+
+                // Notificar al logger
+                if (logger != null)
+                {
+                    logger.OnTrajectoryFinished(qTarget, qStart, T, dt);
+                }
+
                 yield break;
             }
 

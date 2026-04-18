@@ -5,13 +5,20 @@
  * @brief REST-контроллер для управления роботом-манипулятором UR5e.
  *
  * Предоставляет HTTP-эндпоинты для:
- *   - Планирования траекторий (PMP minimum-jerk)
- *   - Установки опорной траектории
- *   - Шагов управления (LQR/MPC-lite + обратная динамика)
- *   - Обучения с подкреплением (RL: reset/step для PPO-агента)
+ *   - Планирования опорной траектории minimum-jerk (квинтический полином).
+ *     Предпочтительный endpoint: POST /arm/plan_minjerk_q.
+ *     Для совместимости со старым Unity-клиентом сохранён alias
+ *     POST /arm/plan_pmp_q — оба указывают на один и тот же обработчик.
+ *     Реализация — замкнутая формула квинтика, а НЕ численный решатель
+ *     принципа максимума Понтрягина.
+ *   - Установки опорной траектории для контура управления.
+ *   - Шагов управления (LQR / MPC-lite + обратная динамика) — ЯДРО ЭТАПА 1.
+ *   - RL-эндпоинтов (reset/step) — задел для будущих этапов, не ядро.
  *
- * Использует фильтр Калмана 2-го порядка (KF2) для оценки состояния
- * и конечногоризонтный LQR с рекурсией Риккати для вычисления усилений.
+ * Оценка состояния: фильтр Калмана 2-го порядка (KF2) по измерениям q
+ * для восстановления скорости dq. Основа управления: конечногоризонтный
+ * LQR с обратной рекурсией Риккати на локальной модели ошибки
+ * (двойной интегратор по каждому суставу).
  */
 
 #include <drogon/HttpController.h>
@@ -22,7 +29,7 @@
 #include <vector>
 
 #include "dynamics.hpp"    // ArmDynamics — модель динамики UR5e
-#include "trajectory.hpp"  // PMPPoint, plan_pmp_minimum_jerk — планирование траекторий
+#include "trajectory.hpp"  // RefPoint, plan_minjerk_traj — планирование траекторий
 
 class ArmController : public drogon::HttpController<ArmController> {
 public:
@@ -30,8 +37,12 @@ public:
 
     // ---- Регистрация HTTP-эндпоинтов ----
     METHOD_LIST_BEGIN
-        // Планирование траектории minimum-jerk в суставных координатах
-        ADD_METHOD_TO(ArmController::handlePlanPMP_Q,     "/arm/plan_pmp_q",    drogon::Post);
+        // Планирование опорной траектории minimum-jerk (квинтический полином) в суставных координатах.
+        // Два URL — один и тот же обработчик:
+        //   - /arm/plan_minjerk_q  — предпочтительное имя (корректно отражает суть: minimum-jerk planner).
+        //   - /arm/plan_pmp_q      — исторический alias (оставлен для совместимости с Unity-клиентом).
+        ADD_METHOD_TO(ArmController::handlePlanMinJerkQ,     "/arm/plan_minjerk_q", drogon::Post);
+        ADD_METHOD_TO(ArmController::handlePlanMinJerkQ,     "/arm/plan_pmp_q",     drogon::Post);
         // Установка опорной траектории для контроллера
         ADD_METHOD_TO(ArmController::handleSetReference,  "/arm/set_reference", drogon::Post);
         // Один шаг управления (LQR + обратная динамика + интегрирование)
@@ -42,9 +53,9 @@ public:
         ADD_METHOD_TO(ArmController::handleRLStep,        "/rl/step",           drogon::Post);
     METHOD_LIST_END
 
-    /// Планирование PMP minimum-jerk траектории.
-    void handlePlanPMP_Q(const drogon::HttpRequestPtr&,
-                         std::function<void (const drogon::HttpResponsePtr&)>&&);
+    /// Планирование опорной траектории minimum-jerk (квинтический полином).
+    void handlePlanMinJerkQ(const drogon::HttpRequestPtr&,
+                            std::function<void (const drogon::HttpResponsePtr&)>&&);
 
     /// Установка опорной траектории для контура управления.
     void handleSetReference(const drogon::HttpRequestPtr&,
@@ -66,7 +77,7 @@ private:
     ArmDynamics dyn_;  ///< Модель динамики UR5e (инерция, трение, гравитация)
 
     std::mutex mtx_;                    ///< Мьютекс для потокобезопасного доступа к траектории
-    std::vector<PMPPoint> ref_traj_;    ///< Опорная траектория (PMP minimum-jerk)
+    std::vector<RefPoint> ref_traj_;    ///< Опорная траектория minimum-jerk (квинтик).
     double ref_dt_{0.02};               ///< Шаг дискретизации опорной траектории (с)
     double ref_T_{0.0};                 ///< Длительность опорной траектории (с)
 

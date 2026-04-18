@@ -1,23 +1,33 @@
 /**
  * @file ArmController.cc
- * @brief REST контроллер для UR5e робота-манипулятора с поддержкой RL
+ * @brief REST контроллер для UR5e робота-манипулятора.
  *
- * Этот модуль реализует HTTP контроллер для управления робошумом UR5e на основе
- * Drogon фреймворка. Включает следующую функциональность:
- * - Планирование траектории с минимальным рывком (PMP)
- * - LQR (линейно-квадратичное управление) с конечным горизонтом
- * - Управление по PD (пропорционально-дифференциальное)
- * - MPC-lite управление
- * - Фильтр Калмана для оценки состояния
- * - RL (обучение с подкреплением) интерфейс с использованием PPO
+ * Реализация HTTP-контроллера на базе Drogon. Ядро текущего этапа проекта —
+ * конечногоризонтный LQR с рекурсией Риккати на локальной модели ошибки
+ * (двойной интегратор по каждому суставу).
  *
- * Математическая основа:
- * - Динамика: x[k+1] = Ax[k] + Bu[k]
- * - Риккати рекурсия: P[k] = Q + A'PA - A'PB(R+B'PB)^{-1}B'PA
- * - Управление: u[k] = -K[k]x[k], где K[k] = (R+B'PB)^{-1}B'PA
+ * Состав модуля:
+ *   - Генерация опорной траектории minimum-jerk (квинтический полином,
+ *     замкнутая формула). Это НЕ численный решатель принципа максимума
+ *     Понтрягина. Предпочтительный HTTP endpoint: POST /arm/plan_minjerk_q;
+ *     alias /arm/plan_pmp_q оставлен для совместимости со старым
+ *     Unity-клиентом.
+ *   - Управление LQR с конечным горизонтом (основа этапа 1) и упрощённый
+ *     PD-режим для сравнения.
+ *   - Фильтр Калмана 2-го порядка (KF2) — оценка скорости по измерениям q.
+ *   - Служебные RL-эндпоинты (/rl/reset, /rl/step) — задел для последующих
+ *     этапов, не ядро текущего этапа.
  *
- * @see ArmDynamics для динамики робота
- * @see PMPPoint для траекторий минимального рывка
+ * Математическая основа LQR-контура:
+ *   Локальная модель:      x[k+1] = A x[k] + B u[k],  x = [eq, edq]^T
+ *   Рекурсия Риккати:      P[k]  = Q + A^T P[k+1] A
+ *                                   - A^T P[k+1] B (R + B^T P[k+1] B)^{-1} B^T P[k+1] A
+ *   Закон управления:      u[k]  = -K[k] x[k],
+ *                          K[k]  = (R + B^T P[k+1] B)^{-1} B^T P[k+1] A
+ *
+ * @see ArmDynamics — полная нелинейная модель UR5e, компенсируется через
+ *      inverseDynamics.
+ * @see RefPoint   — точка опорной траектории minimum-jerk.
  */
 
 #include "ArmController.h"
@@ -251,7 +261,7 @@ struct RefSample {
  * @param t Момент времени интерполяции
  * @return Интерполированный образец с q[i] = qa[i] + alpha * (qb[i] - qa[i])
  */
-static RefSample lerp_ref(const PMPPoint& a, const PMPPoint& b, double t) {
+static RefSample lerp_ref(const RefPoint& a, const RefPoint& b, double t) {
     double alpha = 0.0;
     if (b.t > a.t) alpha = (t - a.t) / (b.t - a.t);
     alpha = std::clamp(alpha, 0.0, 1.0);
@@ -281,12 +291,12 @@ static RefSample lerp_ref(const PMPPoint& a, const PMPPoint& b, double t) {
  * времени t с шагом dt_ref. Использует линейную интерполяцию между точками.
  * Пустая траектория возвращает нулевой образец.
  *
- * @param traj_copy Копия сохраненной траектории (вектор PMPPoint)
+ * @param traj_copy Копия сохраненной траектории (вектор RefPoint)
  * @param t Желаемый момент времени
  * @param dt_ref Шаг дискретизации исходной траектории (для индексирования)
  * @return RefSample с q, dq, ddq в момент t
  */
-static RefSample sample_ref_from_traj(const std::vector<PMPPoint>& traj_copy, double t, double dt_ref) {
+static RefSample sample_ref_from_traj(const std::vector<RefPoint>& traj_copy, double t, double dt_ref) {
     RefSample ref;
     if (traj_copy.empty()) {
         ref.q.assign(6, 0.0);
@@ -555,7 +565,7 @@ struct ControlResult {
  *
  * @param q_use Текущие позиции суставов [6]
  * @param dq_use Текущие скорости суставов [6]
- * @param traj_copy Копия опорной траектории (вектор PMPPoint)
+ * @param traj_copy Копия опорной траектории (вектор RefPoint)
  * @param dt_ref Шаг дискретизации траектории
  * @param t Текущий момент времени
  * @param dt Шаг интегрирования динамики
@@ -572,7 +582,7 @@ struct ControlResult {
  */
 static ControlResult compute_control_step(const std::vector<double>& q_use,
                                           const std::vector<double>& dq_use,
-                                          const std::vector<PMPPoint>& traj_copy,
+                                          const std::vector<RefPoint>& traj_copy,
                                           double dt_ref,
                                           double t,
                                           double dt,
@@ -653,9 +663,15 @@ ArmController::ArmController()
 }
 
 /**
- * @brief HTTP обработчик для планирования траектории с минимальным рывком (PMP)
+ * @brief HTTP обработчик для планирования опорной траектории minimum-jerk
  *
- * Эндпоинт POST /arm/plan_pmp_q
+ * Реализует замкнутую формулу квинтика (полинома 5-й степени) для задачи
+ * minimum-jerk с фиксированными граничными условиями. Это НЕ принцип
+ * максимума Понтрягина.
+ *
+ * Эндпоинты (оба указывают на этот же обработчик):
+ *   POST /arm/plan_minjerk_q  — предпочтительное имя
+ *   POST /arm/plan_pmp_q      — alias для совместимости со старым Unity-клиентом
  *
  * JSON запрос:
  * {
@@ -681,7 +697,7 @@ ArmController::ArmController()
  * @param req HTTP запрос
  * @param callback Функция обратного вызова для отправки ответа
  */
-void ArmController::handlePlanPMP_Q(const HttpRequestPtr& req,
+void ArmController::handlePlanMinJerkQ(const HttpRequestPtr& req,
                                    std::function<void (const HttpResponsePtr&)>&& callback) {
     Json::Value root;
     auto json = parse_json_body(req, root);
@@ -732,7 +748,7 @@ void ArmController::handlePlanPMP_Q(const HttpRequestPtr& req,
         for (int i = 0; i < 6; ++i) q0_6[i] = st.q[i];
     }
 
-    auto pmp_traj = plan_pmp_minimum_jerk(q0_6, q_target6, T, dt);
+    auto ref_traj = plan_minjerk_traj(q0_6, q_target6, T, dt);
     dyn_.setState(q_target6, {0,0,0,0,0,0});
 
     Json::Value out(Json::objectValue);
@@ -741,7 +757,7 @@ void ArmController::handlePlanPMP_Q(const HttpRequestPtr& req,
     out["q_start_used"] = to_q6_json(q0_6);
     out["q_target_used"] = to_q6_json(q_target6);
     out["trajectory"] = Json::arrayValue;
-    for (const auto& p : pmp_traj) {
+    for (const auto& p : ref_traj) {
         Json::Value item(Json::objectValue);
         item["t"] = p.t;
         item["q"] = to_q6_json(p.q);
@@ -830,9 +846,9 @@ void ArmController::handleSetReference(const HttpRequestPtr& req,
         for (int i = 0; i < 6; ++i) q0_6[i] = st.q[i];
     }
 
-    std::vector<PMPPoint> traj;
+    std::vector<RefPoint> traj;
     try {
-        traj = plan_pmp_minimum_jerk(q0_6, q_target6, T, dt);
+        traj = plan_minjerk_traj(q0_6, q_target6, T, dt);
     } catch (const std::exception& e) {
         auto resp = HttpResponse::newHttpJsonResponse(make_error(std::string("Planner error: ") + e.what()));
         resp->setStatusCode(k500InternalServerError);
@@ -927,7 +943,7 @@ void ArmController::handleStep(const HttpRequestPtr& req,
         return;
     }
 
-    std::vector<PMPPoint> traj_copy;
+    std::vector<RefPoint> traj_copy;
     double dt_ref = 0.02;
     double T_ref = 0.0;
     {
@@ -1201,9 +1217,9 @@ void ArmController::handleRLReset(const HttpRequestPtr& req,
     }
     if (dt <= 1e-6) dt = 0.02;
 
-    std::vector<PMPPoint> traj;
+    std::vector<RefPoint> traj;
     try {
-        traj = plan_pmp_minimum_jerk(q_start6, q_target6, T, dt);
+        traj = plan_minjerk_traj(q_start6, q_target6, T, dt);
     } catch (const std::exception& e) {
         auto resp = HttpResponse::newHttpJsonResponse(make_error(std::string("Planner error: ") + e.what()));
         resp->setStatusCode(k500InternalServerError);
@@ -1421,7 +1437,7 @@ void ArmController::handleRLStep(const HttpRequestPtr& req,
         return;
     }
 
-    std::vector<PMPPoint> traj_copy;
+    std::vector<RefPoint> traj_copy;
     double dt_ref = 0.02;
     double T_ref = 0.0;
     double t = 0.0;

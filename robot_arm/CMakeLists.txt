@@ -30,10 +30,8 @@ if (NOT "${CMAKE_CXX_STANDARD}" STREQUAL "")
     # Стандарт задан явно — не переопределяем
 elseif (HAS_ANY AND HAS_STRING_VIEW AND HAS_COROUTINE)
     set(CMAKE_CXX_STANDARD 20)
-elseif (HAS_ANY AND HAS_STRING_VIEW)
-    set(CMAKE_CXX_STANDARD 17)
 else ()
-    set(CMAKE_CXX_STANDARD 14)
+    set(CMAKE_CXX_STANDARD 17)
 endif ()
 
 set(CMAKE_CXX_STANDARD_REQUIRED ON)

@@ -5,6 +5,15 @@
 #include <stdexcept>
 
 /*
+  Генератор опорной (эталонной) траектории minimum-jerk.
+
+  Реализация: ЗАМКНУТАЯ АНАЛИТИЧЕСКАЯ ФОРМУЛА — квинтический полином
+  (полином 5-й степени), являющийся известным оптимальным решением
+  задачи minimum-jerk на тройном интеграторе с фиксированными граничными
+  условиями. Нет двухточечной краевой задачи, нет пристрелки, нет
+  итераций по сопряжённым переменным. Это НЕ численный решатель
+  принципа максимума Понтрягина.
+
   Модель (для каждого сустава):
     x1 = q,  x2 = dq,  x3 = ddq
     u  = dddq (jerk, рывок)
@@ -12,21 +21,23 @@
   Функционал (minimum-jerk):
     J = ∫_0^T (1/2) ||u(t)||^2 dt
 
-  Типичная аналитическая форма траектории:
+  Аналитическая форма траектории (замкнутое решение):
     q(t) = a0 + a1 t + a2 t^2 + a3 t^3 + a4 t^4 + a5 t^5
 */
 
-struct PMPPoint {
+struct RefPoint {
     double t;
     std::vector<double> q;     // положение
     std::vector<double> dq;    // скорость
     std::vector<double> ddq;   // ускорение
-    std::vector<double> u;     // jerk = dddq (управление)
+    std::vector<double> u;     // jerk = dddq (производная тройного интегратора)
 
-    // Сопряжённые переменные (только для “видимости”/отладки в рамках PMP)
+    // Диагностические поля. Вычисляются пост-фактум как производные квинтика
+    // и НЕ используются в контуре управления (см. ArmController.cc). Оставлены
+    // для совместимости с внешними скриптами анализа.
     std::vector<double> lambda1;
     std::vector<double> lambda2;
-    std::vector<double> lambda3; // u* = -lambda3
+    std::vector<double> lambda3; // справочно: при данной форме квинтика u = -lambda3
 
     double J_acc = 0.0; // накопленная стоимость ≈ ∫_0^t (1/2)||u||^2 dt
 };
@@ -231,21 +242,25 @@ inline std::vector<std::vector<double>> plan_minjerk(
 }
 
 // ------------------------------------------------------------
-// PMP minimum-jerk (ОБЩИЙ случай): допускает граничные условия по dq и ddq
-// Устойчивая сетка + корректное накопление стоимости с реальным шагом dt_step
+// Генератор опорной траектории minimum-jerk (ОБЩИЙ случай):
+// допускает произвольные граничные условия по dq и ddq.
+// Устойчивая сетка + корректное накопление стоимости с реальным шагом dt_step.
+// Реализация — аналитический квинтик (замкнутая формула), а НЕ численный ПМП.
 // ------------------------------------------------------------
 // Теория (смысл):
-//  - Модель по каждому суставу — “тройной интегратор”:
+//  - Модель по каждому суставу — «тройной интегратор»:
 //        x1 = q,  x2 = dq,  x3 = ddq
 //        x1' = x2
 //        x2' = x3
 //        x3' = u    (u = dddq, jerk)
 //  - Функционал minimum-jerk:
 //        J = ∫_0^T (1/2) ||u(t)||^2 dt
-//  - Оптимальная траектория q(t) при фиксированных q,dq,ddq на концах — квинтик.
-//  - Здесь мы возвращаем: q, dq, ddq, u(=jerk), “видимость PMP” (λ1,λ2,λ3),
-//    и J_acc — накопленную стоимость (приближение интеграла).
-inline std::vector<PMPPoint> plan_pmp_minimum_jerk(
+//  - Известный результат: при фиксированных q, dq, ddq на концах
+//    оптимальная по этому функционалу траектория — квинтический полином.
+//    Мы его и строим напрямую, без итераций.
+//  - Возвращаем: q, dq, ddq, u (=jerk), диагностические λ (не используются
+//    контуром управления), и J_acc — накопленную стоимость.
+inline std::vector<RefPoint> plan_minjerk_traj(
     const std::vector<double>& q0,    // q(0)
     const std::vector<double>& dq0,   // dq(0)
     const std::vector<double>& ddq0,  // ddq(0)
@@ -260,10 +275,10 @@ inline std::vector<PMPPoint> plan_pmp_minimum_jerk(
 
     // Проверка: все векторы должны иметь одинаковую размерность dof
     if (dq0.size()!=dof || ddq0.size()!=dof || q1.size()!=dof || dq1.size()!=dof || ddq1.size()!=dof)
-        throw std::runtime_error("plan_pmp_minimum_jerk(general): size mismatch");
+        throw std::runtime_error("plan_minjerk_traj(general): size mismatch");
 
     // Проверка времени
-    if (T <= 0.0) throw std::runtime_error("plan_pmp_minimum_jerk: T must be > 0");
+    if (T <= 0.0) throw std::runtime_error("plan_minjerk_traj: T must be > 0");
 
     // Защита от dt ~ 0
     dt = std::max(dt, 1e-9);
@@ -273,7 +288,7 @@ inline std::vector<PMPPoint> plan_pmp_minimum_jerk(
     double dt_eff = T / N;
 
     // Выход: N+1 точек
-    std::vector<PMPPoint> out;
+    std::vector<RefPoint> out;
     out.reserve((size_t)N + 1);
 
     // Коэффициенты квинтика для каждого сустава, удовлетворяющие:
@@ -305,7 +320,7 @@ inline std::vector<PMPPoint> plan_pmp_minimum_jerk(
         const double tt5 = tt4 * tt;
 
         // Создаём точку траектории
-        PMPPoint p;
+        RefPoint p;
         p.t = t;
         p.q.assign(dof, 0.0);
         p.dq.assign(dof, 0.0);
@@ -344,15 +359,14 @@ inline std::vector<PMPPoint> plan_pmp_minimum_jerk(
                    + 24.0*a[4]*tt
                    + 60.0*a[5]*tt2;
 
-            // “Видимость PMP”:
-            //  Для Hamiltonian H = (1/2)u^2 + ... + λ3 u
-            //  условие оптимальности: ∂H/∂u = u + λ3 = 0  =>  u* = -λ3
-            p.lambda3[i] = -p.u[i];
-
-            // Восстанавливаем λ2 и λ1 из производных u(t) (согласовано с сопряжённой системой):
-            //  λ2 = du/dt,  λ1 = -d^2u/dt^2  (один из согласованных выборов для “отображения” PMP)
-            const double du_dt   = 24.0*a[4] + 120.0*a[5]*tt; // du/dt
-            const double d2u_dt2 = 120.0*a[5];                // d^2u/dt^2
+            // Диагностические величины (НЕ используются контуром управления).
+            // Считаются пост-фактум как производные уже построенного квинтика.
+            // Выбор формул согласован с классической постановкой minimum-jerk,
+            // но сами они здесь не решают никакую задачу, а лишь сохраняются
+            // для внешних скриптов анализа.
+            p.lambda3[i] = -p.u[i];                       // по построению u = -λ3
+            const double du_dt   = 24.0*a[4] + 120.0*a[5]*tt;  // du/dt
+            const double d2u_dt2 = 120.0*a[5];                 // d²u/dt²
             p.lambda2[i] = du_dt;
             p.lambda1[i] = -d2u_dt2;
         }
@@ -380,18 +394,18 @@ inline std::vector<PMPPoint> plan_pmp_minimum_jerk(
 // ------------------------------------------------------------
 // Эта перегрузка нужна, чтобы не менять старый код.
 // Она просто подставляет нулевые скорости и ускорения и вызывает общий вариант.
-inline std::vector<PMPPoint> plan_pmp_minimum_jerk(
+inline std::vector<RefPoint> plan_minjerk_traj(
     const std::vector<double>& q0,
     const std::vector<double>& q1,
     double T, double dt)
 {
     const size_t dof = q0.size();
-    if (q1.size() != dof) throw std::runtime_error("plan_pmp_minimum_jerk: size mismatch");
+    if (q1.size() != dof) throw std::runtime_error("plan_minjerk_traj: size mismatch");
 
     // z — вектор нулей для скоростей и ускорений на концах
     std::vector<double> z(dof, 0.0);
 
     // Вызов общего варианта с “покой → покой”
-    return plan_pmp_minimum_jerk(q0, z, z, q1, z, z, T, dt);
+    return plan_minjerk_traj(q0, z, z, q1, z, z, T, dt);
 }
 

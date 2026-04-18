@@ -6,11 +6,8 @@
  *
  * Предоставляет HTTP-эндпоинты для:
  *   - Планирования опорной траектории minimum-jerk (квинтический полином).
- *     Предпочтительный endpoint: POST /arm/plan_minjerk_q.
- *     Для совместимости со старым Unity-клиентом сохранён alias
- *     POST /arm/plan_pmp_q — оба указывают на один и тот же обработчик.
- *     Реализация — замкнутая формула квинтика, а НЕ численный решатель
- *     принципа максимума Понтрягина.
+ *     Endpoint: POST /arm/plan_minjerk_q. Реализация — замкнутая формула
+ *     квинтика, а НЕ численный решатель принципа максимума Понтрягина.
  *   - Установки опорной траектории для контура управления.
  *   - Шагов управления (LQR / MPC-lite + обратная динамика) — ЯДРО ЭТАПА 1.
  *   - RL-эндпоинтов (reset/step) — задел для будущих этапов, не ядро.
@@ -38,11 +35,7 @@ public:
     // ---- Регистрация HTTP-эндпоинтов ----
     METHOD_LIST_BEGIN
         // Планирование опорной траектории minimum-jerk (квинтический полином) в суставных координатах.
-        // Два URL — один и тот же обработчик:
-        //   - /arm/plan_minjerk_q  — предпочтительное имя (корректно отражает суть: minimum-jerk planner).
-        //   - /arm/plan_pmp_q      — исторический alias (оставлен для совместимости с Unity-клиентом).
-        ADD_METHOD_TO(ArmController::handlePlanMinJerkQ,     "/arm/plan_minjerk_q", drogon::Post);
-        ADD_METHOD_TO(ArmController::handlePlanMinJerkQ,     "/arm/plan_pmp_q",     drogon::Post);
+        ADD_METHOD_TO(ArmController::handlePlanMinJerkQ,  "/arm/plan_minjerk_q", drogon::Post);
         // Установка опорной траектории для контроллера
         ADD_METHOD_TO(ArmController::handleSetReference,  "/arm/set_reference", drogon::Post);
         // Один шаг управления (LQR + обратная динамика + интегрирование)

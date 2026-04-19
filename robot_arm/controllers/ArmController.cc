@@ -233,7 +233,7 @@ static Mat2 mat2_outer2(const std::array<double,2>& v, const std::array<double,2
 }
 
 // ============================================================
-// Дискретизация траектории из сохраненной PMP траектории
+// Дискретизация сохранённой опорной траектории (minimum-jerk)
 // ============================================================
 
 /**
@@ -241,7 +241,8 @@ static Mat2 mat2_outer2(const std::array<double,2>& v, const std::array<double,2
  * @brief Образец отсчета опорной траектории в момент времени t
  *
  * Содержит желаемые позицию (q), скорость (dq) и ускорение (ddq)
- * из опорной траектории, полученные интерполяцией двух соседних точек PMP.
+ * из опорной траектории, полученные линейной интерполяцией двух
+ * соседних её точек.
  */
 struct RefSample {
     std::vector<double> q, dq, ddq;
@@ -285,9 +286,9 @@ static RefSample lerp_ref(const RefPoint& a, const RefPoint& b, double t) {
 /**
  * @brief Дискретизирует опорную траекторию в заданный момент времени
  *
- * Производит дискретизацию сохраненной PMP траектории (набор точек) в точку
- * времени t с шагом dt_ref. Использует линейную интерполяцию между точками.
- * Пустая траектория возвращает нулевой образец.
+ * Производит дискретизацию сохранённой опорной траектории (набор точек) в
+ * точку времени t с шагом dt_ref. Использует линейную интерполяцию между
+ * точками. Пустая траектория возвращает нулевой образец.
  *
  * @param traj_copy Копия сохраненной траектории (вектор RefPoint)
  * @param t Желаемый момент времени
@@ -431,8 +432,10 @@ static std::vector<double> map_action_to_weights(const std::vector<double>& acti
 }
 
 // ============================================================
-// LQR / MPC-lite коэффициенты для локальной модели двойного интегратора
-// (управление предсказывает желаемое ddq, но растение - это ArmDynamics)
+// LQR: коэффициенты обратной связи для локальной модели двойного
+// интегратора (управление предсказывает желаемое ddq, а растение —
+// полная нелинейная модель ArmDynamics, момент считается через
+// inverse dynamics)
 // ============================================================
 
 /**
@@ -554,8 +557,9 @@ struct ControlResult {
  *    ddq_des = ddq_ref - kp*(q - q_ref) - kd*(dq - dq_ref)
  *    где kp = wq, kd = wdq
  *
- * 2) MPC-lite / LQR управление:
- *    Использует конечный горизонт Риккати для вычисления коэффициентов K[0]
+ * 2) LQR управление (ядро этапа 1):
+ *    Конечногоризонтная рекурсия Риккати даёт коэффициенты обратной связи K[0]
+ *    для локальной модели ошибки (двойной интегратор по каждому суставу):
  *    ddq_des = ddq_ref - K[0][0]*(q - q_ref) - K[0][1]*(dq - dq_ref)
  *
  * Затем используется inverse dynamics для вычисления моментов на основе ddq_des.
@@ -567,8 +571,9 @@ struct ControlResult {
  * @param dt_ref Шаг дискретизации траектории
  * @param t Текущий момент времени
  * @param dt Шаг интегрирования динамики
- * @param mode Режим управления: "pd", "mpc_lite", "lqr"
- * @param horizonN Горизонт предсказания (для MPC-lite/LQR)
+ * @param mode Режим управления: "pd" (сравнение) или "lqr" / "mpc_lite"
+ *             (оба режима соответствуют конечногоризонтному LQR)
+ * @param horizonN Горизонт LQR (число шагов обратной рекурсии Риккати)
  * @param wq Вес на позиции
  * @param wdq Вес на скорости
  * @param wu Вес на управлении
@@ -768,8 +773,9 @@ void ArmController::handlePlanMinJerkQ(const HttpRequestPtr& req,
  *
  * Эндпоинт POST /arm/set_reference
  *
- * Запланировать и установить PMP траекторию как опорную для последующих вызовов /arm/step.
- * Также сбрасывает фильтры Калмана и состояние RL.
+ * Планирует minimum-jerk траекторию (квинтический полином) и сохраняет её
+ * как опорную для последующих вызовов /arm/step. Также сбрасывает фильтры
+ * Калмана и состояние RL-эпизода.
  *
  * JSON запрос:
  * {
@@ -1281,13 +1287,14 @@ void ArmController::handleRLReset(const HttpRequestPtr& req,
     std::vector<double> obs = build_obs(q_start6, std::vector<double>(6, 0.0), ref0, 0.0, T);
 
     // ============================================================
-    // Сброс метрик эпизода и расчёт характеристик плана PMP
+    // Сброс метрик эпизода и расчёт характеристик опорной траектории
     // ============================================================
     ep_metrics_ = EpisodeMetrics{};
     ep_metrics_.ref_T = T;
     {
-        // Характеристики плана PMP, вычисляются один раз при reset.
-        // Не зависят от трекера — оценивают качество ТОЛЬКО планировщика.
+        // Характеристики опорной minimum-jerk траектории, вычисляются один
+        // раз при reset. Не зависят от трекера — оценивают качество ТОЛЬКО
+        // планировщика.
         double ref_max_dq      = 0.0;
         double ref_max_ddq     = 0.0;
         double ref_jerk_energy = 0.0;
@@ -1304,7 +1311,7 @@ void ArmController::handleRLReset(const HttpRequestPtr& req,
                     if (a > ref_max_ddq) ref_max_ddq = a;
                 }
                 if (i < (int)pt.u.size()) {
-                    // pt.u содержит jerk (минимизируемая величина в PMP minimum-jerk)
+                    // pt.u содержит jerk — минимизируемую величину задачи minimum-jerk
                     ref_jerk_energy += pt.u[i] * pt.u[i] * dt;
                 }
             }
@@ -1554,7 +1561,7 @@ void ArmController::handleRLStep(const HttpRequestPtr& req,
         const auto&  dq_real = st_real.dq;
         const double dt_step = dt_ref;
 
-        // Векторные ошибки по суставам (реальное состояние против плана PMP)
+        // Векторные ошибки по суставам (реальное состояние против опорной траектории)
         std::array<double, 6> eq_vec{}, edq_vec{};
         double sum_eq_sq_step  = 0.0;
         double sum_edq_sq_step = 0.0;
@@ -1640,7 +1647,7 @@ void ArmController::handleRLStep(const HttpRequestPtr& req,
                 << weights_vec[0] << " / "
                 << weights_vec[1] << " / "
                 << weights_vec[2] << "\n"
-            << "  --- Tracker (real state vs PMP) ---\n"
+            << "  --- Tracker (real state vs reference) ---\n"
             << "  eq_rms_global     : " << eq_rms_global    << " rad\n"
             << "  edq_rms_global    : " << edq_rms_global   << " rad/s\n"
             << "  max_abs_eq        : " << ep_metrics_.max_abs_eq << " rad\n"
@@ -1649,7 +1656,7 @@ void ArmController::handleRLStep(const HttpRequestPtr& req,
             << "  J_total (LQR)     : " << ep_metrics_.sum_J       << "\n"
             << "  reward_total      : " << ep_metrics_.reward_total << "\n"
             << "  success           : " << (success ? "YES" : "no") << "\n"
-            << "  --- PMP plan ---\n"
+            << "  --- Reference plan (minimum-jerk) ---\n"
             << "  T_plan            : " << ep_metrics_.ref_T        << " s\n"
             << "  ref_max_|dq|      : " << ep_metrics_.ref_max_dq   << " rad/s\n"
             << "  ref_max_|ddq|     : " << ep_metrics_.ref_max_ddq  << " rad/s^2\n"

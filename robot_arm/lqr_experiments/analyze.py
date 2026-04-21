@@ -173,6 +173,41 @@ def fig_sweep_tradeoff(runs: list, stem: str, title: str,
     savefig(fig2, stem + "_tradeoff")
 
 
+def fig_exp4_accuracy_bars(runs: list, stem: str, title: str) -> None:
+    """2x2 bar grid: rms_eq / max_abs_eq / eq_final / u_energy across targets.
+
+    Unlike fig_sweep_tradeoff, the 3 runs do not share a numeric sweep
+    variable, so we just plot them in insertion order and show all four
+    accuracy/effort metrics side by side. This is the defence-facing
+    figure that demonstrates the LQR behaves consistently across
+    different goal poses.
+    """
+    labels     = [r["label"] for r in runs]
+    rms        = [r["rms_eq"]     for r in runs]
+    max_eq     = [r["max_abs_eq"] for r in runs]
+    eq_fin     = [r["eq_final"]   for r in runs]
+    energy     = [r["u_energy"]   for r in runs]
+    x = np.arange(len(labels))
+
+    fig, axes = plt.subplots(2, 2, figsize=(11, 7.5))
+
+    axes[0, 0].bar(x, rms,    color="tab:blue")
+    axes[0, 0].set_title("RMS eq [rad]")
+    axes[0, 1].bar(x, max_eq, color="tab:red")
+    axes[0, 1].set_title("max |eq| [rad]")
+    axes[1, 0].bar(x, eq_fin, color="tab:green")
+    axes[1, 0].set_title("eq final [rad]")
+    axes[1, 1].bar(x, energy, color="tab:orange")
+    axes[1, 1].set_title(r"$\int \|\tau\|^2\, dt$  [N²·m²·s]")
+
+    for ax in axes.flat:
+        ax.set_xticks(x)
+        ax.set_xticklabels(labels, rotation=20, ha="right", fontsize=9)
+
+    fig.suptitle(title, fontsize=12)
+    savefig(fig, stem)
+
+
 # ────────────────────────────────────────────────────────────────────
 #                        MAIN
 # ────────────────────────────────────────────────────────────────────
@@ -227,6 +262,25 @@ def main() -> int:
         fig_sweep_tradeoff(exp3, "exp3_bars",
                            "Exp 3 — Horizon N",
                            x_key="horizonN", x_label="N")
+
+    # ── Exp 4: multi-target generalisation ─────────────────────────
+    exp4 = [s for s in summaries if s["experiment"] == "exp4"]
+    if exp4:
+        print("\n[Exp 4] Multi-target generalisation")
+        # One full tracking grid per target (q vs q_ref, 6 joints).
+        for s in exp4:
+            df = load_run(s["csv"])
+            stem = f"exp4_tracking_{s['name'].replace('exp4_target_', '')}"
+            fig_tracking_grid(df,
+                              f"Exp 4 — {s['label']} (LQR baseline)",
+                              stem)
+        # Per-joint error overlay across the 3 targets.
+        fig_sweep_error_grid(exp4, "exp4_errors",
+                             "Exp 4 — Joint tracking error per target",
+                             sort_key=lambda r: r["name"])
+        # 2x2 bar chart of accuracy + effort metrics per target.
+        fig_exp4_accuracy_bars(exp4, "exp4_bars",
+                               "Exp 4 — LQR metrics across different q_target")
 
     # ── Combined metrics table ─────────────────────────────────────
     print("\nWriting summary table")

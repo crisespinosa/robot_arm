@@ -1,10 +1,12 @@
 """
 LQR experiments for the UR5e thesis defense (Stage 1).
 
-Runs three experiments against the Drogon C++ backend on port 8848:
+Runs four experiments against the Drogon C++ backend on port 8848:
   Exp 1: basic tracking (baseline weights, baseline horizon)
   Exp 2: Q/R weight sweep (state-vs-control trade-off)
   Exp 3: prediction horizon sweep (N = 5, 10, 20, 40, 80)
+  Exp 4: generalisation across multiple q_target configurations
+         (same LQR, same weights, same N, only the goal pose varies)
 
 Each run:
   1. POST /arm/set_reference  with q_start, q_target, T, dt
@@ -68,7 +70,7 @@ N_BASELINE = 20
 class RunConfig:
     """One LQR rollout: everything the backend needs to run a single episode."""
     name: str                       # unique identifier for CSV filename
-    experiment: str                 # exp1 / exp2 / exp3 (grouping for analyze.py)
+    experiment: str                 # exp1 / exp2 / exp3 / exp4 (grouping for analyze.py)
     label: str                      # human-readable label for plots
     weights: Dict[str, float] = field(default_factory=lambda: dict(W_BASELINE))
     horizonN: int = N_BASELINE
@@ -124,6 +126,26 @@ def build_configs() -> List[RunConfig]:
             experiment="exp3",
             label=f"N={N}",
             horizonN=N,
+        ))
+
+    # ─── Exp 4: generalisation across q_target ─────────────────────
+    # Same LQR, same weights, same horizon. Only q_target changes.
+    # Demonstrates that the regulator is not tuned to a single
+    # trajectory but handles different goal poses of the manipulator.
+    #   A (moderado):   half-amplitude baseline, smooth
+    #   B (asimétrico): joints 2/4/6 frozen, joints 1/3/5 forced
+    #   C (amplio):     1.5× baseline amplitude, stresses u_max
+    exp4_targets = [
+        ("A_moderado",   "Target A (moderate)",   [0.4, -0.3, 0.4, -0.2, 0.3, -0.15]),
+        ("B_asimetrico", "Target B (asymmetric)", [1.0,  0.0, 0.8,  0.0, 0.4,  0.0 ]),
+        ("C_amplio",     "Target C (wide)",       [1.2, -0.9, 1.0, -0.7, 0.8, -0.5 ]),
+    ]
+    for tag, lbl, q_tgt in exp4_targets:
+        configs.append(RunConfig(
+            name=f"exp4_target_{tag}",
+            experiment="exp4",
+            label=lbl,
+            q_target=list(q_tgt),
         ))
 
     return configs
@@ -304,10 +326,15 @@ def run_single(cfg: RunConfig, client: BackendClient,
 # ────────────────────────────────────────────────────────────────────
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    # Use a literal description rather than __doc__.splitlines()[0] so the
+    # script still works under `python -OO` / `PYTHONOPTIMIZE=2`, which
+    # strip module docstrings and would otherwise make __doc__ None.
+    parser = argparse.ArgumentParser(
+        description="LQR experiments for the UR5e thesis defense (Stage 1)."
+    )
     parser.add_argument("--backend", default=BACKEND_URL,
                         help=f"Backend URL (default: {BACKEND_URL})")
-    parser.add_argument("--only", choices=["exp1", "exp2", "exp3"],
+    parser.add_argument("--only", choices=["exp1", "exp2", "exp3", "exp4"],
                         default=None,
                         help="Run only one experiment group")
     parser.add_argument("--results-dir", default=str(RESULTS_DIR),

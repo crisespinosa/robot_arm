@@ -116,7 +116,7 @@ public:
         // =============================================================
         qmin_ = {-2.0*PI, -2.0*PI, -2.0*PI, -2.0*PI, -2.0*PI, -2.0*PI};
         qmax_ = { 2.0*PI,  2.0*PI,  2.0*PI,  2.0*PI,  2.0*PI,  2.0*PI};
-        dqmax_  = {PI, PI, PI, 2.0*PI, 2.0*PI, 2.0*PI};
+        dqmax_  = {PI, PI, PI, PI, PI, PI};
         taumax_ = {150.0, 150.0, 150.0, 28.0, 28.0, 28.0};
 
         // =============================================================
@@ -449,31 +449,34 @@ private:
         // Физические параметры звеньев UR5e
         // [URDF/ROS] массы, [OFFICIAL] длины, [APPROX] положения CoM
         // ------------------------------------------------------------
-        constexpr double m_ua    = 8.393;   // масса верхнего плеча (звено 2 URDF)
-        constexpr double m_eff   = 4.90;    // m3 + m4 + m5 + m6 (предплечье + кисть)
-        constexpr double a2      = 0.425;   // длина верхнего плеча [OFFICIAL]
-        constexpr double lc_ua   = 0.2125;  // CoM верхнего плеча (≈ середина)
-        constexpr double lc_eff  = 0.30;    // эфф. CoM бундла предплечье+кисть от локтя
+        constexpr double m_ua    = 8.058;   // масса верхнего плеча (звено 2 URDF)
+        constexpr double m_eff   = 5.881;    // m3 + m4 + m5 + m6 (предплечье + кисть)
+        constexpr double a2      = 0.425;   // длина верхнего плеча 
+        constexpr double lc_ua   = 0.2125;  // CoM верхнего плеча 
+        constexpr double lc_eff  = 0.320;    // эфф. CoM бундла предплечье+кисть от локтя
 
         // Предвычисленные инерциальные константы (параллельная ось + собственная)
-        constexpr double I_ua_com    = m_ua * a2 * a2 / 12.0;              // ≈ 0.1263
-        constexpr double I_fa_com    = m_eff * 0.3922 * 0.3922 / 12.0;     // ≈ 0.0628
-        constexpr double m_ua_lc_sq  = m_ua * lc_ua * lc_ua;               // ≈ 0.3787
-        constexpr double m_eff_lc_sq = m_eff * lc_eff * lc_eff;            // ≈ 0.4410
-        constexpr double m_eff_a2_sq = m_eff * a2 * a2;                    // ≈ 0.8851
-        constexpr double m_eff_a2_lc = m_eff * a2 * lc_eff;                // ≈ 0.6248
+        constexpr double I_ua_com = m_ua * a2 * a2 / 12.0;          // ≈ 0.1213
+        constexpr double I_fa_com = m_eff * 0.3922 * 0.3922 / 12.0; // ≈ 0.0754
+        constexpr double m_ua_lc_sq = m_ua * lc_ua * lc_ua;           // ≈ 0.3639
+        constexpr double m_eff_lc_sq = m_eff * lc_eff * lc_eff;        // ≈ 0.6022
+        constexpr double m_eff_a2_sq = m_eff * a2 * a2;                // ≈ 1.0623
+        constexpr double m_eff_a2_lc = m_eff * a2 * lc_eff;            // ≈ 0.7998
 
         // ------------------------------------------------------------
-        // Отражённая инерция роторов (через гармонические редукторы ~100:1)
-        // [APPROX] — подобраны так, чтобы суммарные M[i][i] совпадали с
-        // эмпирическими оценками для UR5e в номинальной конфигурации.
+        // Приведённые дополнительные инерции приводов.
+        // Основаны на данных Clochiatti et al., Robotica 2024 для UR5e:
+        // Jrot_j = Jm_j + Jr_j.
+        // Для сустава 6 используется приближённое значение того же порядка,
+        // что и для других кистевых суставов.
         // ------------------------------------------------------------
-        constexpr double Jrot0 = 4.00;
-        constexpr double Jrot1 = 9.00;
-        constexpr double Jrot2 = 3.00;
-        constexpr double Jrot3 = 0.38;
-        constexpr double Jrot4 = 0.17;
-        constexpr double Jrot5 = 0.07;
+
+        constexpr double Jrot0 = 1.73119e-4;  // joint 1
+        constexpr double Jrot1 = 1.53147e-4;  // joint 2
+        constexpr double Jrot2 = 1.86773e-4;  // joint 3
+        constexpr double Jrot3 = 2.13490e-5;  // joint 4
+        constexpr double Jrot4 = 2.09680e-5;  // joint 5
+        constexpr double Jrot5 = 2.09680e-5;  // joint 6 (temporary approximation from size-1 wrist)
 
         const double c2  = std::cos(q[2]);
         const double s1  = std::sin(q[1]);
@@ -556,13 +559,14 @@ private:
         std::vector<double> g(dof_, 0.0);
         if (dof_ != 6 || q.size() < 6) return g;
 
-        constexpr double G       = 9.81;
-        constexpr double m_ua    = 8.393;
-        constexpr double m_eff   = 4.90;
-        constexpr double a2      = 0.425;
-        constexpr double lc_ua   = 0.2125;
-        constexpr double lc_eff  = 0.30;
-
+        constexpr double m_ua = 8.058;
+        constexpr double m_eff = 5.881;
+        constexpr double a2 = 0.425;
+        constexpr double lc_ua = 0.2125;
+        constexpr double lc_eff = 0.320;
+        // Проверка числовых значений:
+//   (m_ua·lc_ua + m_eff·a₂)·G = (1.7123 + 2.4994)·9.81 ≈ 41.31
+//   m_eff·lc_eff·G            = 5.881·0.320·9.81      ≈ 18.46
         // Константы ∂U/∂qᵢ, выведенные аналитически:
         //   U(q) ⊃ −G · [m_ua·(lc_ua·cos q₁) + m_eff·(a₂·cos q₁ + lc_eff·cos(q₁+q₂))]
         //   ∂U/∂q₁ = G · [(m_ua·lc_ua + m_eff·a₂)·sin q₁ + m_eff·lc_eff·sin(q₁+q₂)]
@@ -627,10 +631,10 @@ private:
         if (dof_ != 6 || q.size() < 6 || dq.size() < 6) return C;
 
         // Физические константы (те же, что в computeMassMatrix)
-        constexpr double m_eff  = 4.90;
-        constexpr double a2     = 0.425;
-        constexpr double lc_eff = 0.30;
-        constexpr double h_const = m_eff * a2 * lc_eff;  // ≈ 0.6248
+        constexpr double m_eff = 5.881;
+        constexpr double a2 = 0.425;
+        constexpr double lc_eff = 0.320;
+        constexpr double h_const = m_eff * a2 * lc_eff;  // ≈ 0.7998
 
         // Планарное 2R взаимодействие плечо(1) — локоть(2)
         const double h = h_const * std::sin(q[2]);

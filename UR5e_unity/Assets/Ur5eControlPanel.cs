@@ -197,7 +197,7 @@ public class Ur5eControlPanel : MonoBehaviour
         // Endpoint (read-only display — useful during the defense)
         GUILayout.BeginHorizontal();
         GUILayout.Label("Endpoint", GUILayout.Width(LABEL_W));
-        GUILayout.Label(trajectoryClient.path, GUILayout.Width(220));
+        GUILayout.Label("/arm/set_reference + /arm/step", GUILayout.Width(260));
         GUILayout.EndHorizontal();
 
         GUILayout.Space(8);

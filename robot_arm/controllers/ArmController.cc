@@ -34,6 +34,8 @@
 #include <algorithm>
 #include <array>
 #include <cmath>
+#include <iomanip>
+#include <iostream>
 #include <memory>
 #include <string>
 #include <vector>
@@ -795,6 +797,19 @@ void ArmController::handleSetReference(const HttpRequestPtr& req,
     out["points"] = (int)ref_traj_.size();
     out["q_start_used"] = to_q6_json(q0_6);
     out["q_target_used"] = to_q6_json(q_target6);
+
+    // Логируем установку опорной траектории — пригодится для отладки шагов.
+    std::cout << std::fixed << std::setprecision(4)
+              << "\n[set_reference] T=" << T << "s  dt=" << dt
+              << "s  points=" << ref_traj_.size() << "\n"
+              << "  q_start  = ["
+              << q0_6[0] << ", " << q0_6[1] << ", " << q0_6[2] << ", "
+              << q0_6[3] << ", " << q0_6[4] << ", " << q0_6[5] << "]\n"
+              << "  q_target = ["
+              << q_target6[0] << ", " << q_target6[1] << ", " << q_target6[2] << ", "
+              << q_target6[3] << ", " << q_target6[4] << ", " << q_target6[5] << "]"
+              << std::endl;
+
     callback(HttpResponse::newHttpJsonResponse(out));
 }
 
@@ -1043,6 +1058,24 @@ void ArmController::handleStep(const HttpRequestPtr& req,
     dbg["edq_rms"] = ctrl.edq_rms;
     dbg["use_kalman"] = use_kalman;
     out["debug"] = dbg;
+
+    // Компактный лог шага: время, ошибки, пиковая ошибка по суставам, RMS момента.
+    double max_abs_eq = 0.0;
+    double sum_tau_sq = 0.0;
+    for (int i = 0; i < 6; ++i) {
+        const double abs_eq = std::abs(q_use[i] - ctrl.ref.q[i]);
+        if (abs_eq > max_abs_eq) max_abs_eq = abs_eq;
+        sum_tau_sq += ctrl.tau_cmd[i] * ctrl.tau_cmd[i];
+    }
+    const double tau_rms = std::sqrt(sum_tau_sq / 6.0);
+    std::cout << std::fixed << std::setprecision(4)
+              << "[step] t=" << t
+              << "s  eq_rms=" << ctrl.eq_rms
+              << "  edq_rms=" << ctrl.edq_rms
+              << "  max|eq|=" << max_abs_eq
+              << "  |tau|_rms=" << std::setprecision(2) << tau_rms
+              << "  mode=" << mode
+              << std::endl;
+
     callback(HttpResponse::newHttpJsonResponse(out));
 }
-

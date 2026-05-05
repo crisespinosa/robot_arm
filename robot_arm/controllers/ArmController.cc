@@ -788,6 +788,9 @@ void ArmController::handleSetReference(const HttpRequestPtr& req,
         ref_T_ = T;
         have_last_q_ = false;
         for (auto& f : kf_) f = KF2{};
+        // Сброс накопителей метрик при установке новой опорной траектории
+        stats_ = EpisodeStats{};
+        step_count_ = 0;
     }
 
     Json::Value out(Json::objectValue);
@@ -1059,23 +1062,161 @@ void ArmController::handleStep(const HttpRequestPtr& req,
     dbg["use_kalman"] = use_kalman;
     out["debug"] = dbg;
 
-    // Компактный лог шага: время, ошибки, пиковая ошибка по суставам, RMS момента.
-    double max_abs_eq = 0.0;
-    double sum_tau_sq = 0.0;
+    // ---- Накопление метрик эпизода + периодический/финальный лог ----
+    double step_max_abs_eq = 0.0;
+    double sum_eq_sq_step  = 0.0;
+    double sum_edq_sq_step = 0.0;
+    double sum_tau_sq_step = 0.0;
     for (int i = 0; i < 6; ++i) {
-        const double abs_eq = std::abs(q_use[i] - ctrl.ref.q[i]);
-        if (abs_eq > max_abs_eq) max_abs_eq = abs_eq;
-        sum_tau_sq += ctrl.tau_cmd[i] * ctrl.tau_cmd[i];
+        const double eq_i  = q_use[i]  - ctrl.ref.q[i];
+        const double edq_i = dq_use[i] - ctrl.ref.dq[i];
+        const double abs_eq = std::abs(eq_i);
+        if (abs_eq > step_max_abs_eq) step_max_abs_eq = abs_eq;
+        sum_eq_sq_step  += eq_i  * eq_i;
+        sum_edq_sq_step += edq_i * edq_i;
+        sum_tau_sq_step += ctrl.tau_cmd[i] * ctrl.tau_cmd[i];
     }
-    const double tau_rms = std::sqrt(sum_tau_sq / 6.0);
-    std::cout << std::fixed << std::setprecision(4)
-              << "[step] t=" << t
-              << "s  eq_rms=" << ctrl.eq_rms
-              << "  edq_rms=" << ctrl.edq_rms
-              << "  max|eq|=" << max_abs_eq
-              << "  |tau|_rms=" << std::setprecision(2) << tau_rms
-              << "  mode=" << mode
-              << std::endl;
+    const double tau_rms = std::sqrt(sum_tau_sq_step / 6.0);
+
+    bool summary_now = false;
+    int  step_count_local = 0;
+    EpisodeStats final_stats;
+    {
+        std::lock_guard<std::mutex> lk(mtx_);
+        stats_.sum_eq_sq    += sum_eq_sq_step;
+        stats_.sum_edq_sq   += sum_edq_sq_step;
+        stats_.sum_u_sq_dt  += sum_tau_sq_step * dt;
+        if (step_max_abs_eq > stats_.max_abs_eq) stats_.max_abs_eq = step_max_abs_eq;
+        stats_.n_samples   += 1;
+        stats_.last_eq_rms  = ctrl.eq_rms;
+        stats_.last_t       = t;
+        stats_.mode = mode;
+        stats_.wq = wq; stats_.wdq = wdq; stats_.wu = wu;
+        stats_.wqN = wqN; stats_.wdqN = wdqN;
+        stats_.horizonN = horizonN;
+        stats_.u_max = u_max;
+        ++step_count_;
+        step_count_local = step_count_;
+
+        // Финальный кадр — печатаем сводку ровно один раз.
+        if (!stats_.summary_printed && t + 0.5 * dt >= T_ref) {
+            stats_.summary_printed = true;
+            summary_now = true;
+            final_stats = stats_;
+        }
+    }
+
+    // 1) Периодический компактный лог (раз в log_every_n_ шагов)
+    if (log_every_n_ > 0 && step_count_local % log_every_n_ == 0) {
+        std::cout << std::fixed << std::setprecision(4)
+                  << "[step] k=" << step_count_local
+                  << " t=" << t << "s"
+                  << "  eq_rms=" << ctrl.eq_rms
+                  << "  max|eq|=" << step_max_abs_eq
+                  << "  |tau|_rms=" << std::setprecision(2) << tau_rms
+                  << std::endl;
+    }
+
+    // 2) Резюме эпизода (только в финальном шаге)
+    if (summary_now) {
+        const int    N         = std::max(1, final_stats.n_samples);
+        const double eq_rms_g  = std::sqrt(final_stats.sum_eq_sq  / (N * 6.0));
+        const double edq_rms_g = std::sqrt(final_stats.sum_edq_sq / (N * 6.0));
+        const bool   success   = (final_stats.last_eq_rms <= success_tol_);
+
+        std::cout << std::fixed << std::setprecision(5)
+                  << "\n========== EPISODE METRICS ==========\n"
+                  << "  steps              : " << N << "\n"
+                  << "  T                  : " << T_ref << " s\n"
+                  << "  dt                 : " << dt    << " s\n"
+                  << "  mode               : " << final_stats.mode << "\n"
+                  << "  weights (wq/wdq/wu): "
+                       << final_stats.wq  << " / "
+                       << final_stats.wdq << " / "
+                       << final_stats.wu  << "\n"
+                  << "  horizonN           : " << final_stats.horizonN << "\n"
+                  << "  u_max              : " << final_stats.u_max    << "\n"
+                  << "  eq_rms_global      : " << eq_rms_g  << " rad\n"
+                  << "  edq_rms_global     : " << edq_rms_g << " rad/s\n"
+                  << "  max_abs_eq         : " << final_stats.max_abs_eq   << " rad\n"
+                  << "  eq_final_norm      : " << final_stats.last_eq_rms  << " rad\n"
+                  << "  u_energy_total     : " << final_stats.sum_u_sq_dt  << " Nm^2*s\n"
+                  << "  success            : " << (success ? "YES" : "no")
+                  << "  (tol=" << success_tol_ << " rad)\n"
+                  << "=====================================\n" << std::endl;
+    }
+
+    callback(HttpResponse::newHttpJsonResponse(out));
+}
+std::sqrt(sum_tau_sq_step / 6.0);
+
+    bool summary_now = false;
+    int  step_count_local = 0;
+    EpisodeStats final_stats;
+    {
+        std::lock_guard<std::mutex> lk(mtx_);
+        stats_.sum_eq_sq    += sum_eq_sq_step;
+        stats_.sum_edq_sq   += sum_edq_sq_step;
+        stats_.sum_u_sq_dt  += sum_tau_sq_step * dt;
+        if (step_max_abs_eq > stats_.max_abs_eq) stats_.max_abs_eq = step_max_abs_eq;
+        stats_.n_samples   += 1;
+        stats_.last_eq_rms  = ctrl.eq_rms;
+        stats_.last_t       = t;
+        stats_.mode = mode;
+        stats_.wq = wq; stats_.wdq = wdq; stats_.wu = wu;
+        stats_.wqN = wqN; stats_.wdqN = wdqN;
+        stats_.horizonN = horizonN;
+        stats_.u_max = u_max;
+        ++step_count_;
+        step_count_local = step_count_;
+
+        // Финальный кадр — печатаем сводку ровно один раз.
+        if (!stats_.summary_printed && t + 0.5 * dt >= T_ref) {
+            stats_.summary_printed = true;
+            summary_now = true;
+            final_stats = stats_;
+        }
+    }
+
+    // 1) Периодический компактный лог (раз в log_every_n_ шагов)
+    if (log_every_n_ > 0 && step_count_local % log_every_n_ == 0) {
+        std::cout << std::fixed << std::setprecision(4)
+                  << "[step] k=" << step_count_local
+                  << " t=" << t << "s"
+                  << "  eq_rms=" << ctrl.eq_rms
+                  << "  max|eq|=" << step_max_abs_eq
+                  << "  |tau|_rms=" << std::setprecision(2) << tau_rms
+                  << std::endl;
+    }
+
+    // 2) Резюме эпизода (только в финальном шаге)
+    if (summary_now) {
+        const int    N         = std::max(1, final_stats.n_samples);
+        const double eq_rms_g  = std::sqrt(final_stats.sum_eq_sq  / (N * 6.0));
+        const double edq_rms_g = std::sqrt(final_stats.sum_edq_sq / (N * 6.0));
+        const bool   success   = (final_stats.last_eq_rms <= success_tol_);
+
+        std::cout << std::fixed << std::setprecision(5)
+                  << "\n========== EPISODE METRICS ==========\n"
+                  << "  steps              : " << N << "\n"
+                  << "  T                  : " << T_ref << " s\n"
+                  << "  dt                 : " << dt    << " s\n"
+                  << "  mode               : " << final_stats.mode << "\n"
+                  << "  weights (wq/wdq/wu): "
+                       << final_stats.wq  << " / "
+                       << final_stats.wdq << " / "
+                       << final_stats.wu  << "\n"
+                  << "  horizonN           : " << final_stats.horizonN << "\n"
+                  << "  u_max              : " << final_stats.u_max    << "\n"
+                  << "  eq_rms_global      : " << eq_rms_g  << " rad\n"
+                  << "  edq_rms_global     : " << edq_rms_g << " rad/s\n"
+                  << "  max_abs_eq         : " << final_stats.max_abs_eq   << " rad\n"
+                  << "  eq_final_norm      : " << final_stats.last_eq_rms  << " rad\n"
+                  << "  u_energy_total     : " << final_stats.sum_u_sq_dt  << " Nm^2*s\n"
+                  << "  success            : " << (success ? "YES" : "no")
+                  << "  (tol=" << success_tol_ << " rad)\n"
+                  << "=====================================\n" << std::endl;
+    }
 
     callback(HttpResponse::newHttpJsonResponse(out));
 }

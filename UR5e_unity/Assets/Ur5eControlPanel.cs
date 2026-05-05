@@ -1,20 +1,28 @@
 using UnityEngine;
 
 /// <summary>
-/// Runtime UI panel for controlling the UR5e PPO Controller.
-/// Creates sliders for joint targets and trajectory parameters,
-/// plus Start/Stop buttons — no Inspector needed.
+/// Runtime UI panel for controlling the UR5e robot arm using the
+/// LQR / minimum-jerk pipeline.
 ///
-/// Usage:
-///   1. Add this script to ANY GameObject in the scene
-///   2. Drag the Ur5ePPOController reference into the "controller" field
-///   3. Press Play — the panel appears in the top-left corner
+/// Pipeline driven by this panel:
+///     Ur5eTrajectoryClientQ  →  POST /arm/plan_minjerk_q
+///                            →  open-loop playback of the planned quintic
+///
+/// Setup:
+///   1. Add this script to any GameObject in the scene.
+///   2. Drag the Ur5eTrajectoryClientQ reference into the
+///      "Trajectory Client" field in the Inspector.
+///   3. Press Play — the panel appears in the top-left corner.
 /// </summary>
 public class Ur5eControlPanel : MonoBehaviour
 {
     [Header("Reference")]
-    [Tooltip("Drag your Ur5ePPOController here")]
-    public Ur5ePPOController controller;
+    [Tooltip("Drag your Ur5eTrajectoryClientQ here")]
+    public Ur5eTrajectoryClientQ trajectoryClient;
+
+    [Header("Target Configuration (radians)")]
+    [Tooltip("Target joint angles in radians")]
+    public float[] qTarget = new float[6];
 
     // ── Joint limits (UR5e, radians) ──
     // Joints 0,3,4,5: ±2π  |  Joints 1,2: -π to π
@@ -25,13 +33,12 @@ public class Ur5eControlPanel : MonoBehaviour
         { "Base", "Shoulder", "Elbow", "Wrist 1", "Wrist 2", "Wrist 3" };
 
     // ── Layout constants ──
-    private const float PANEL_X = 10f;
-    private const float PANEL_Y = 10f;
-    private const float PANEL_W = 340f;
-    private const float ROW_H = 22f;
-    private const float PAD = 6f;
-    private const float LABEL_W = 80f;
-    private const float VALUE_W = 55f;
+    private const float PANEL_X  = 10f;
+    private const float PANEL_Y  = 10f;
+    private const float PANEL_W  = 340f;
+    private const float PAD      = 6f;
+    private const float LABEL_W  = 80f;
+    private const float VALUE_W  = 55f;
 
     // ── Internal state ──
     private bool panelVisible = true;
@@ -44,19 +51,37 @@ public class Ur5eControlPanel : MonoBehaviour
     // Trajectory param copies (so sliders work smoothly)
     private float trajT;
     private float trajDt;
-    private int trajN;
+
+    // Status tracking (for the status rows)
+    private float lastSendTime = -999f;
+    private float lastSendT    = 0f;
 
     void Start()
     {
-        if (controller == null)
-            controller = FindObjectOfType<Ur5ePPOController>();
+        if (trajectoryClient == null)
+            trajectoryClient = FindObjectOfType<Ur5eTrajectoryClientQ>();
 
-        if (controller != null)
+        if (trajectoryClient != null)
         {
-            trajT  = controller.T;
-            trajDt = controller.dt;
-            trajN  = controller.N;
+            trajT  = trajectoryClient.T;
+            trajDt = trajectoryClient.dt;
         }
+        else
+        {
+            trajT  = 1.5f;
+            trajDt = 0.02f;
+        }
+
+        if (qTarget == null || qTarget.Length < 6) qTarget = new float[6];
+    }
+
+    void Update()
+    {
+        // Keyboard shortcuts
+        if (Input.GetKeyDown(KeyCode.Space))
+            SendTarget();
+        if (Input.GetKeyDown(KeyCode.Escape) && trajectoryClient != null)
+            trajectoryClient.StopPlayback();
     }
 
     private void InitStyles()
@@ -93,16 +118,15 @@ public class Ur5eControlPanel : MonoBehaviour
         if (GUI.Button(new Rect(PANEL_X, PANEL_Y, 30, 24), panelVisible ? "−" : "+"))
             panelVisible = !panelVisible;
 
-        GUI.Label(new Rect(PANEL_X + 34, PANEL_Y + 2, 200, 22),
-                  "UR5e Control Panel", headerStyle);
+        GUI.Label(new Rect(PANEL_X + 34, PANEL_Y + 2, 260, 22),
+                  "UR5e LQR Control Panel", headerStyle);
 
-        if (!panelVisible || controller == null) return;
+        if (!panelVisible || trajectoryClient == null) return;
 
-        // Calculate panel height
-        float contentH = 420f;
+        // Panel background
+        float contentH = 400f;
         float panelH = Mathf.Min(contentH, Screen.height - PANEL_Y - 20);
 
-        // Semi-transparent background
         GUI.color = new Color(0, 0, 0, 0.8f);
         GUI.DrawTexture(new Rect(PANEL_X, PANEL_Y + 28, PANEL_W, panelH),
                         Texture2D.whiteTexture);
@@ -119,31 +143,30 @@ public class Ur5eControlPanel : MonoBehaviour
         GUILayout.Label("Target Joint Angles (rad)", sectionStyle);
         GUILayout.Space(2);
 
+        if (qTarget == null || qTarget.Length < 6) qTarget = new float[6];
+
         for (int i = 0; i < 6; i++)
         {
             GUILayout.BeginHorizontal();
             GUILayout.Label(jointNames[i], GUILayout.Width(LABEL_W));
 
-            controller.qTarget[i] = GUILayout.HorizontalSlider(
-                controller.qTarget[i], jointMin[i], jointMax[i]);
+            qTarget[i] = GUILayout.HorizontalSlider(
+                qTarget[i], jointMin[i], jointMax[i]);
 
-            GUILayout.Label(controller.qTarget[i].ToString("F2"),
+            GUILayout.Label(qTarget[i].ToString("F2"),
                             valueStyle, GUILayout.Width(VALUE_W));
             GUILayout.EndHorizontal();
         }
 
-        // Quick-reset target to zeros
         GUILayout.BeginHorizontal();
         if (GUILayout.Button("Reset to Zero", GUILayout.Height(24)))
         {
-            for (int i = 0; i < 6; i++)
-                controller.qTarget[i] = 0f;
+            for (int i = 0; i < 6; i++) qTarget[i] = 0f;
         }
         if (GUILayout.Button("Random Target", GUILayout.Height(24)))
         {
             for (int i = 0; i < 6; i++)
-                controller.qTarget[i] = Random.Range(jointMin[i] * 0.3f,
-                                                      jointMax[i] * 0.3f);
+                qTarget[i] = Random.Range(jointMin[i] * 0.3f, jointMax[i] * 0.3f);
         }
         GUILayout.EndHorizontal();
 
@@ -161,7 +184,7 @@ public class Ur5eControlPanel : MonoBehaviour
         trajT = GUILayout.HorizontalSlider(trajT, 0.5f, 5.0f);
         GUILayout.Label(trajT.ToString("F2"), valueStyle, GUILayout.Width(VALUE_W));
         GUILayout.EndHorizontal();
-        controller.T = Mathf.Round(trajT * 20f) / 20f; // snap to 0.05
+        trajectoryClient.T = Mathf.Round(trajT * 20f) / 20f; // snap 0.05
 
         // dt
         GUILayout.BeginHorizontal();
@@ -169,45 +192,36 @@ public class Ur5eControlPanel : MonoBehaviour
         trajDt = GUILayout.HorizontalSlider(trajDt, 0.005f, 0.05f);
         GUILayout.Label(trajDt.ToString("F3"), valueStyle, GUILayout.Width(VALUE_W));
         GUILayout.EndHorizontal();
-        controller.dt = Mathf.Round(trajDt * 1000f) / 1000f; // snap to 0.001
+        trajectoryClient.dt = Mathf.Round(trajDt * 1000f) / 1000f; // snap 0.001
 
-        // N (horizon)
+        // Endpoint (read-only display — useful during the defense)
         GUILayout.BeginHorizontal();
-        GUILayout.Label("N (horizon)", GUILayout.Width(LABEL_W));
-        float nFloat = GUILayout.HorizontalSlider(trajN, 5, 50);
-        trajN = Mathf.RoundToInt(nFloat);
-        GUILayout.Label(trajN.ToString(), valueStyle, GUILayout.Width(VALUE_W));
-        GUILayout.EndHorizontal();
-        controller.N = trajN;
-
-        // Mode display
-        GUILayout.BeginHorizontal();
-        GUILayout.Label("Mode", GUILayout.Width(LABEL_W));
-        GUILayout.Label(controller.mode, GUILayout.Width(100));
+        GUILayout.Label("Endpoint", GUILayout.Width(LABEL_W));
+        GUILayout.Label(trajectoryClient.path, GUILayout.Width(220));
         GUILayout.EndHorizontal();
 
         GUILayout.Space(8);
 
         // ═══════════════════════════════════════
-        // EPISODE CONTROL
+        // TRAJECTORY CONTROL
         // ═══════════════════════════════════════
-        GUILayout.Label("Episode Control", sectionStyle);
+        GUILayout.Label("Trajectory Control", sectionStyle);
         GUILayout.Space(2);
 
         GUILayout.BeginHorizontal();
         GUI.backgroundColor = new Color(0.2f, 0.8f, 0.3f);
-        if (GUILayout.Button("▶  Start Episode", GUILayout.Height(32)))
-            controller.StartEpisode();
+        if (GUILayout.Button("▶  Send Target", GUILayout.Height(32)))
+            SendTarget();
 
         GUI.backgroundColor = new Color(0.9f, 0.3f, 0.2f);
         if (GUILayout.Button("■  Stop", GUILayout.Height(32)))
-            controller.StopEpisode();
+            trajectoryClient.StopPlayback();
 
         GUI.backgroundColor = Color.white;
         GUILayout.EndHorizontal();
 
         GUILayout.Space(4);
-        GUILayout.Label("Keyboard: P = Start  |  O = Stop",
+        GUILayout.Label("Keyboard: Space = Send  |  Esc = Stop",
                         new GUIStyle(GUI.skin.label) { fontSize = 10,
                             normal = { textColor = Color.gray } });
 
@@ -216,20 +230,35 @@ public class Ur5eControlPanel : MonoBehaviour
         // ═══════════════════════════════════════
         // LIVE STATUS
         // ═══════════════════════════════════════
-        GUILayout.Label("Live Status", sectionStyle);
+        GUILayout.Label("Status", sectionStyle);
         GUILayout.Space(2);
 
-        DrawStatusRow("Episode Active", controller.GetEpisodeActive() ? "YES" : "no",
-                       controller.GetEpisodeActive() ? Color.green : Color.gray);
-        DrawStatusRow("Step", controller.GetStepCount().ToString(), Color.white);
-        DrawStatusRow("Reward", controller.GetTotalReward().ToString("F2"), Color.white);
-        DrawStatusRow("eq_rms", controller.GetLastEqRms().ToString("F4"),
-                       controller.GetLastEqRms() < 0.01f ? Color.green : Color.yellow);
-        DrawStatusRow("Success", controller.GetLastSuccess() ? "YES" : "no",
-                       controller.GetLastSuccess() ? Color.green : Color.gray);
+        float elapsed = Time.time - lastSendTime;
+        bool  playing = (lastSendTime > 0f) && (elapsed <= lastSendT + 0.25f);
+
+        DrawStatusRow("Playing", playing ? "YES" : "no",
+                       playing ? Color.green : Color.gray);
+        DrawStatusRow("Last T",
+                       lastSendT > 0f ? lastSendT.ToString("F2") + " s" : "-",
+                       Color.white);
+        DrawStatusRow("Elapsed",
+                       lastSendTime > 0f ? elapsed.ToString("F2") + " s" : "-",
+                       Color.white);
 
         GUILayout.EndScrollView();
         GUILayout.EndArea();
+    }
+
+    private void SendTarget()
+    {
+        if (trajectoryClient == null) return;
+        if (qTarget == null || qTarget.Length < 6) return;
+
+        trajectoryClient.StopPlayback();
+        trajectoryClient.RequestPlanQ((float[])qTarget.Clone());
+
+        lastSendTime = Time.time;
+        lastSendT    = trajectoryClient.T;
     }
 
     private void DrawStatusRow(string label, string value, Color color)

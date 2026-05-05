@@ -1,2 +1,0 @@
-exp_id,T,dt,q_target_1,q_target_2,q_target_3,q_target_4,q_target_5,q_target_6,q_start_1,q_start_2,q_start_3,q_start_4,q_start_5,q_start_6,q_final_1,q_final_2,q_final_3,q_final_4,q_final_5,q_final_6,err_1,err_2,err_3,err_4,err_5,err_6,err_rms,err_max,success
-1,2.500,0.0200,0.8700,-0.6100,0.7900,-0.5200,0.5200,0.4400,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.8700,-0.6099,0.7898,-0.5199,0.5199,0.4399,0.0000,0.0001,0.0002,0.0001,0.0001,0.0001,0.0001,0.0002,1

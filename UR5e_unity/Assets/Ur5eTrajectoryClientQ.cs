@@ -10,7 +10,7 @@ public class Ur5eTrajectoryClientQ : MonoBehaviour
     [Header("Backend")]
     public string serverIP = "127.0.0.1";
     public int port = 8848;
-    public string path = "/arm/plan_pmp_q";
+    public string path = "/arm/plan_minjerk_q";
 
     [Header("Trajectory params")]
     public float T = 1.0f;

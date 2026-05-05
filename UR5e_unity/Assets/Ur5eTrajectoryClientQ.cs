@@ -23,8 +23,7 @@ public class Ur5eTrajectoryClientQ : MonoBehaviour
     [Header("Applier (must have q1..q6 assigned)")]
     public ApplyJointAngles6 applier;
 
-    [Header("Experiment Logger (optional)")]
-    public ExperimentLogger logger;
+
 
     Coroutine playRoutine;
 
@@ -37,7 +36,7 @@ public class Ur5eTrajectoryClientQ : MonoBehaviour
     class PlanQRequest
     {
         public float[] q_target;
-        public float[] q_start;   // ✅ NUEVO
+        public float[] q_start;   
         public float T;
         public float dt;
     }
@@ -220,10 +219,5 @@ public class Ur5eTrajectoryClientQ : MonoBehaviour
         playRoutine = null;
         // Debug.Log("[TrajectoryClientQ] Playback finished");
 
-        // Notificar al logger si está asignado
-        if (logger != null && lastQTarget != null && lastQStart != null)
-        {
-            logger.OnTrajectoryFinished(lastQTarget, lastQStart, T, dt);
-        }
     }
 }

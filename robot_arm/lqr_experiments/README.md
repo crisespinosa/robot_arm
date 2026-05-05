@@ -1,9 +1,9 @@
 # LQR Experiments — UR5e (Etapa 1)
 
 Experimentos cuantitativos del controlador **LQR de horizonte finito** para la
-defensa de la etapa 1 del proyecto. No usan PPO, no usan Unity, no dependen
-de ninguna heurística externa: son **rollouts headless contra el backend C++**
-en el puerto `8848`.
+defensa de la etapa 1 del proyecto. No usan Unity, no dependen de ninguna
+heurística externa: son **rollouts headless contra el backend C++** en el
+puerto `8848`.
 
 Cada corrida:
 
@@ -313,9 +313,6 @@ Los cuatro experimentos son independientes y se pueden discutir por separado.
 
 ## Qué *no* está aquí (explícito)
 
-- No hay entrenamiento PPO ni rollouts de RL. Los endpoints `/rl/reset` y
-  `/rl/step` del backend existen como andamiaje para una etapa posterior,
-  no se tocan desde este pipeline.
 - No hay resolución numérica de PMP. La trayectoria de referencia se
   calcula con la fórmula cerrada del quíntico (que *coincide* con la
   solución óptima por PMP para el caso minimum-jerk, pero no se resuelve

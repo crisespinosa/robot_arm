@@ -13,7 +13,7 @@ Each run:
   2. Loop /arm/step for t in [0, T] stepping dt
   3. Log every step to a CSV in ./results/
 
-No PPO. No Unity. Pure HTTP against the C++ backend.
+No Unity. Pure HTTP against the C++ backend.
 
 Usage:
   # 1) start the backend (in a separate terminal)

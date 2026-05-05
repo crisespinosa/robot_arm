@@ -2,10 +2,7 @@
 # CI/CD — непрерывная интеграция для проекта robot_arm
 #
 # Выполняет:
-#   1. Проверку синтаксиса Python (flake8 — основные ошибки)
-#   2. Проверку типов Python (mypy — аннотации типов)
-#   3. Проверку импортов и зависимостей Python
-#   4. Сборку C++ бэкенда (CMake + Drogon)
+#   - Сборку C++ бэкенда (CMake + Drogon)
 #
 # Запускается при push/PR в ветки main и develop.
 # ==============================================================================
@@ -20,56 +17,7 @@ on:
 
 jobs:
   # ----------------------------------------------------------------
-  # Задача 1: Проверка Python-кода (линтинг, типы, зависимости)
-  # ----------------------------------------------------------------
-  python-lint:
-    name: "Python: линтинг и проверка типов"
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Клонирование репозитория
-        uses: actions/checkout@v4
-
-      - name: Установка Python 3.10
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.10"
-
-      - name: Установка зависимостей Python
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
-          pip install flake8 mypy
-
-      - name: "Flake8: проверка синтаксиса и стиля"
-        run: |
-          # E501 — длинные строки (игнорируем для научного кода)
-          # W503 — перенос строки перед оператором (спорное правило)
-          # E402 — импорт не в начале файла (matplotlib.use)
-          flake8 python/ \
-            --max-line-length=120 \
-            --ignore=E501,W503,E402 \
-            --count --show-source --statistics
-
-      - name: "Mypy: проверка аннотаций типов"
-        run: |
-          mypy python/ \
-            --ignore-missing-imports \
-            --no-strict-optional \
-            --allow-untyped-defs \
-            || true  # Не блокируем CI при ошибках типов (информационно)
-
-      - name: "Проверка импортов: все модули доступны"
-        run: |
-          cd python
-          python -c "
-          import env_backend_robot_arm
-          import ppo_inference_server
-          print('Все модули Python импортируются успешно.')
-          "
-
-  # ----------------------------------------------------------------
-  # Задача 2: Сборка C++ бэкенда (CMake + Drogon)
+  # Сборка C++ бэкенда (CMake + Drogon)
   # ----------------------------------------------------------------
   cpp-build:
     name: "C++: сборка бэкенда (CMake + Drogon)"

@@ -62,29 +62,43 @@ def load_run(csv_name: str) -> pd.DataFrame:
 #               FIGURE BUILDERS — PER EXPERIMENT
 # ────────────────────────────────────────────────────────────────────
 
-def fig_tracking_grid(df: pd.DataFrame, title: str, stem: str) -> None:
-    """6-joint subplot: q(t) vs q_ref(t) + per-joint error below."""
-    fig, axes = plt.subplots(6, 2, figsize=(10.5, 11),
-                             gridspec_kw={"width_ratios": [2, 1]}, sharex=True)
+def fig_tracking_single(df: pd.DataFrame, title: str, stem: str) -> None:
+    """Single plot: q(t) and q_ref(t) for all 6 joints."""
+    fig, ax = plt.subplots(figsize=(11, 6))
+
     for i in range(6):
-        ax_q = axes[i, 0]
-        ax_e = axes[i, 1]
+        ax.plot(
+            df["t"], df[f"qref{i}"],
+            linestyle="--",
+            linewidth=1.2,
+            label=f"{JOINT_NAMES[i]} ref"
+        )
+        ax.plot(
+            df["t"], df[f"q{i}"],
+            linewidth=1.5,
+            label=f"{JOINT_NAMES[i]} plant"
+        )
 
-        ax_q.plot(df["t"], df[f"qref{i}"], label="q_ref", color="tab:gray",
-                  linestyle="--")
-        ax_q.plot(df["t"], df[f"q{i}"], label="q (plant)", color="tab:blue")
-        ax_q.set_ylabel(f"{JOINT_NAMES[i]}\n[rad]")
-        if i == 0:
-            ax_q.legend(loc="best", fontsize=8)
+    ax.set_xlabel("t [s]")
+    ax.set_ylabel("q [rad]")
+    ax.set_title(title)
+    ax.legend(fontsize=8, ncol=2)
+    savefig(fig, stem)
 
+
+def fig_error_single(df: pd.DataFrame, title: str, stem: str) -> None:
+    """Single plot: tracking error q(t)-q_ref(t) for all 6 joints."""
+    fig, ax = plt.subplots(figsize=(11, 5))
+
+    for i in range(6):
         err = df[f"q{i}"] - df[f"qref{i}"]
-        ax_e.plot(df["t"], err, color="tab:red")
-        ax_e.axhline(0, color="black", linewidth=0.5)
-        ax_e.set_ylabel("eq [rad]")
+        ax.plot(df["t"], err, linewidth=1.4, label=JOINT_NAMES[i])
 
-    axes[-1, 0].set_xlabel("t [s]")
-    axes[-1, 1].set_xlabel("t [s]")
-    fig.suptitle(title, fontsize=12)
+    ax.axhline(0.0, color="black", linewidth=0.7)
+    ax.set_xlabel("t [s]")
+    ax.set_ylabel("eq [rad]")
+    ax.set_title(title)
+    ax.legend(fontsize=8, ncol=3)
     savefig(fig, stem)
 
 
@@ -229,17 +243,30 @@ def main() -> int:
     FIG_DIR.mkdir(parents=True, exist_ok=True)
 
     # ── Exp 1: single run, full tracking + torque profile ──────────
+    # ── Exp 1: single run, tracking + error + torque ───────────────
     exp1 = [s for s in summaries if s["experiment"] == "exp1"]
     if exp1:
         print("\n[Exp 1] Baseline tracking")
         s = exp1[0]
         df = load_run(s["csv"])
-        fig_tracking_grid(df,
-                          f"Exp 1 — Baseline LQR tracking ({s['label']})",
-                          "exp1_tracking")
-        fig_torque_profile(df,
-                           f"Exp 1 — Control torques ({s['label']})",
-                           "exp1_torques")
+
+        fig_tracking_single(
+            df,
+            f"Exp 1 — Baseline LQR tracking vs reference ({s['label']})",
+            "exp1_tracking_single"
+        )
+
+        fig_error_single(
+            df,
+            f"Exp 1 — Tracking error ({s['label']})",
+            "exp1_error_single"
+        )
+
+        fig_torque_profile(
+            df,
+            f"Exp 1 — Control torques ({s['label']})",
+            "exp1_torques"
+        )
 
     # ── Exp 2: Q/R sweep ────────────────────────────────────────────
     exp2 = [s for s in summaries if s["experiment"] == "exp2"]

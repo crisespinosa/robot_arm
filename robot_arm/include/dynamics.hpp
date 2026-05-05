@@ -559,6 +559,7 @@ private:
         std::vector<double> g(dof_, 0.0);
         if (dof_ != 6 || q.size() < 6) return g;
 
+        constexpr double G = 9.81;            // ускорение свободного падения, м/с²
         constexpr double m_ua = 8.058;
         constexpr double m_eff = 5.881;
         constexpr double a2 = 0.425;

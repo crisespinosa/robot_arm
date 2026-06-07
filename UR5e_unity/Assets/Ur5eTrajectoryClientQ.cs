@@ -99,6 +99,9 @@ public class Ur5eTrajectoryClientQ : MonoBehaviour
         public float[] dq_cmd;
         public float[] ddq_cmd;
         public float[] tau_cmd;
+        public float[] q_ref;       // posición de referencia minimum-jerk en t
+        public float[] dq_ref;
+        public float[] ddq_ref;
     }
 
     string Url(string path) => $"http://{serverIP}:{port}{path}";
@@ -296,7 +299,19 @@ public class Ur5eTrajectoryClientQ : MonoBehaviour
                     yield break;
                 }
 
-                if (resp != null && resp.q_cmd != null && resp.q_cmd.Length >= 6)
+                // Aplicamos q_ref (la trayectoria minimum-jerk planificada en el
+                // backend). El campo q_cmd también está disponible (es la
+                // integración de la dinámica del backend partiendo de q_real),
+                // pero produce incrementos demasiado pequeños para que el
+                // ArticulationDrive de Unity acelere a tiempo. Con q_ref Unity
+                // sigue el plan suavemente y el backend mide el error real
+                // (eq_rms_global, max_abs_eq, eq_final_norm) entre lo que pasa
+                // en Unity y lo que pedía el plan.
+                if (resp != null && resp.q_ref != null && resp.q_ref.Length >= 6)
+                {
+                    applier.Apply(resp.q_ref);
+                }
+                else if (resp != null && resp.q_cmd != null && resp.q_cmd.Length >= 6)
                 {
                     applier.Apply(resp.q_cmd);
                 }

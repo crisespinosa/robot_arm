@@ -1269,12 +1269,18 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   serverIP: 127.0.0.1
   port: 8848
-  path: /arm/plan_minjerk_q
   T: 1
   dt: 0.02
+  wq: 30
+  wdq: 2
+  wu: 0.1
+  wqN: 30
+  wdqN: 2
+  mode: lqr
+  horizonN: 20
+  u_max: 8
   playbackScale: 2
   applier: {fileID: 1330017750}
-  logger: {fileID: 0}
 --- !u!114 &318251317
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -5593,7 +5599,6 @@ GameObject:
   m_Component:
   - component: {fileID: 1330017749}
   - component: {fileID: 1330017748}
-  - component: {fileID: 1330017747}
   - component: {fileID: 1330017750}
   m_Layer: 0
   m_Name: ur5e
@@ -5602,28 +5607,6 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &1330017747
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1330017745}
-  m_Enabled: 0
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: d607ea46a579d44c4b19a6322ce4b9b2, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  selectedJoint: 
-  selectedIndex: 0
-  control: 0
-  stiffness: 0
-  damping: 0
-  forceLimit: 0
-  speed: 5
-  torque: 100
-  acceleration: 5
-  highLightColor: {r: 1, g: 0, b: 0, a: 1}
 --- !u!114 &1330017748
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -6408,53 +6391,6 @@ PrefabInstance:
       insertIndex: -1
       addedObject: {fileID: 399766706}
   m_SourcePrefab: {fileID: 100100000, guid: 3f6a0d22f54fa564482bd657dd1e6a94, type: 3}
---- !u!1 &1620832099
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 1620832101}
-  - component: {fileID: 1620832100}
-  m_Layer: 0
-  m_Name: KeyboardController
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!114 &1620832100
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1620832099}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 3c04b9337f0926644be64bf2e96fa2bc, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  ui: {fileID: 318251314}
-  stepDeg: 2
-  enableJog: 1
---- !u!4 &1620832101
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1620832099}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 173.04756, y: 526.30664, z: -82.60001}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1621121237
 GameObject:
   m_ObjectHideFlags: 0
@@ -10325,5 +10261,4 @@ SceneRoots:
   - {fileID: 318251313}
   - {fileID: 1991016300}
   - {fileID: 1521394351}
-  - {fileID: 1620832101}
   - {fileID: 31598661}

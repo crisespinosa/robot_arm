@@ -35,10 +35,11 @@ public class Ur5eControlPanel : MonoBehaviour
     // ── Layout constants ──
     private const float PANEL_X  = 10f;
     private const float PANEL_Y  = 10f;
-    private const float PANEL_W  = 340f;
+    private const float PANEL_W  = 420f;
     private const float PAD      = 6f;
     private const float LABEL_W  = 80f;
-    private const float VALUE_W  = 55f;
+    private const float VALUE_W  = 70f;
+    private const float SLIDER_W = PANEL_W - LABEL_W - VALUE_W - PAD * 4 - 18f; // 18 = scrollbar
 
     // ── Internal state ──
     private bool panelVisible = true;
@@ -151,7 +152,8 @@ public class Ur5eControlPanel : MonoBehaviour
             GUILayout.Label(jointNames[i], GUILayout.Width(LABEL_W));
 
             qTarget[i] = GUILayout.HorizontalSlider(
-                qTarget[i], jointMin[i], jointMax[i]);
+                qTarget[i], jointMin[i], jointMax[i],
+                GUILayout.Width(SLIDER_W));
 
             GUILayout.Label(qTarget[i].ToString("F2"),
                             valueStyle, GUILayout.Width(VALUE_W));
@@ -181,7 +183,7 @@ public class Ur5eControlPanel : MonoBehaviour
         // T (duration)
         GUILayout.BeginHorizontal();
         GUILayout.Label("T (s)", GUILayout.Width(LABEL_W));
-        trajT = GUILayout.HorizontalSlider(trajT, 0.5f, 5.0f);
+        trajT = GUILayout.HorizontalSlider(trajT, 0.5f, 5.0f, GUILayout.Width(SLIDER_W));
         GUILayout.Label(trajT.ToString("F2"), valueStyle, GUILayout.Width(VALUE_W));
         GUILayout.EndHorizontal();
         trajectoryClient.T = Mathf.Round(trajT * 20f) / 20f; // snap 0.05
@@ -189,7 +191,7 @@ public class Ur5eControlPanel : MonoBehaviour
         // dt
         GUILayout.BeginHorizontal();
         GUILayout.Label("dt (s)", GUILayout.Width(LABEL_W));
-        trajDt = GUILayout.HorizontalSlider(trajDt, 0.005f, 0.05f);
+        trajDt = GUILayout.HorizontalSlider(trajDt, 0.005f, 0.05f, GUILayout.Width(SLIDER_W));
         GUILayout.Label(trajDt.ToString("F3"), valueStyle, GUILayout.Width(VALUE_W));
         GUILayout.EndHorizontal();
         trajectoryClient.dt = Mathf.Round(trajDt * 1000f) / 1000f; // snap 0.001

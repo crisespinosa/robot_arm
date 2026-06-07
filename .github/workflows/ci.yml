@@ -47,23 +47,31 @@ jobs:
             --max-line-length=120 \
             --ignore=E501,W503,E402,E303,W504,E266,W291,W293,E302,E305,E261,E262,W292,E231,E225,E226,E228,E251,F401 \
             --count --show-source --statistics \
-            || true
+            
 
       - name: "Mypy: проверка аннотаций типов"
         run: |
-          mypy robot_arm/python/ \
+          mypy robot_arm/lqr_experiments/ \
             --ignore-missing-imports \
             --no-strict-optional \
             --allow-untyped-defs \
             || true
 
-      - name: "Проверка импортов: все модули доступны"
+      - name: "Проверка синтаксиса Python-файлов"
         run: |
-          cd robot_arm/python
-          python -c "
-          import env_backend_robot_arm
-          import ppo_inference_server
-          print('Все модули Python импортируются успешно.')
+          python -m py_compile \ 
+            robot_arm/lqr_experiments/run_experiments.py \ 
+            robot_arm/lqr_experiments/analyze.py
+            
+      - name: "Проверка импортов библиотек" 
+        run: | 
+          python -c " 
+          import requests 
+          import numpy 
+          import pandas 
+          import matplotlib 
+          import openpyxl 
+          print('Все библиотеки Python импортируются успешно.') 
           "
 
   # ----------------------------------------------------------------

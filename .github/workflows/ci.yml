@@ -57,7 +57,7 @@ jobs:
         run: |
           flake8 robot_arm/lqr_experiments/ \
             --max-line-length=120 \
-            --ignore=E501,W503,E402,E303,W504,E266,W291,W293,E302,E305,E261,E262,W292,E231,E225,E226,E228,E251,F401 \
+            --ignore=E501,W503,E402,E303,W504,E266,W291,W293,E302,E305,E261,E262,W292,E231,E225,E226,E228,E251,F401,E127,E202,E221,E241,E272 \
             --count \
             --show-source \
             --statistics

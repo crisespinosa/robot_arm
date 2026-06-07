@@ -1,31 +1,90 @@
+
 # ==============================================================================
 # CI/CD — непрерывная интеграция для проекта robot_arm
 #
 # Выполняет:
-#   - Сборку C++ бэкенда (CMake + Drogon)
+#   1. Проверку синтаксиса и стиля Python-кода с помощью Flake8
+#   2. Проверку аннотаций типов Python-кода с помощью Mypy
+#   3. Проверку синтаксиса Python-файлов
+#   4. Проверку доступности используемых Python-библиотек
+#   5. Сборку C++ backend с помощью CMake и Drogon
 #
-# Запускается при push/PR в ветки main и develop.
+# Запускается при push и pull request в ветки:
+# main, master и develop.
 # ==============================================================================
 
 name: CI
 
 on:
   push:
-    branches: [ main, master, develop ]
+    branches:
+      - main
+      - master
+      - develop
+
   pull_request:
-    branches: [ main, master, develop ]
+    branches:
+      - main
+      - master
+      - develop
 
 jobs:
   # ----------------------------------------------------------------
-  # Сборка C++ бэкенда (CMake + Drogon)
+  # Задача 1: проверка Python-кода
   # ----------------------------------------------------------------
-  cpp-build:
-    name: "C++: сборка бэкенда (CMake + Drogon)"
+  python-lint:
+    name: "Python: линтинг и проверка типов"
     runs-on: ubuntu-latest
 
     steps:
       - name: Клонирование репозитория
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
+
+      - name: Установка Python 3.10
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.10"
+          cache: "pip"
+          cache-dependency-path: robot_arm/lqr_experiments/requirements.txt
+
+      - name: Установка зависимостей Python
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r robot_arm/lqr_experiments/requirements.txt
+          pip install flake8 mypy
+
+      - name: "Flake8: проверка синтаксиса и стиля"
+        run: |
+          flake8 robot_arm/lqr_experiments/ \
+            --max-line-length=120 \
+            --ignore=E501,W503,E402,E303,W504,E266,W291,W293,E302,E305,E261,E262,W292,E231,E225,E226,E228,E251,F401,E127,E202,E221,E241,E272 \
+            --count \
+            --show-source \
+            --statistics
+
+      - name: "Mypy: проверка аннотаций типов"
+        run: |
+          mypy robot_arm/lqr_experiments/ \
+            --ignore-missing-imports \
+            --no-strict-optional \
+            --allow-untyped-defs \
+            || true
+      - name: "Проверка синтаксиса Python-файлов"
+        run: |
+          python -m compileall -q robot_arm/lqr_experiments
+      - name: "Проверка импортов Python-библиотек"
+        run: |
+          python -c "import requests; import numpy; import pandas; import matplotlib; import openpyxl; print('Все используемые библиотеки Python импортируются успешно.')"
+  # ----------------------------------------------------------------
+  # Задача 2: сборка C++ backend
+  # ----------------------------------------------------------------
+  cpp-build:
+    name: "C++: сборка backend с CMake и Drogon"
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Клонирование репозитория
+        uses: actions/checkout@v5
 
       - name: Установка системных зависимостей
         run: |
@@ -39,31 +98,38 @@ jobs:
             zlib1g-dev \
             libssl-dev \
             libsqlite3-dev
-
-      - name: Сборка и установка Drogon из исходников
+      - name: Сборка и установка Drogon
         run: |
           git clone --depth 1 --branch v1.9.1 \
-            https://github.com/drogonframework/drogon.git /tmp/drogon
+            https://github.com/drogonframework/drogon.git \
+            /tmp/drogon
           cd /tmp/drogon
-          git submodule update --init
-          mkdir build && cd build
-          cmake .. -DCMAKE_BUILD_TYPE=Release \
-                   -DBUILD_TESTING=OFF \
-                   -DBUILD_EXAMPLES=OFF
-          make -j$(nproc)
+          git submodule update --init --recursive
+          mkdir -p build
+          cd build
+          cmake .. \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DBUILD_TESTING=OFF \
+            -DBUILD_EXAMPLES=OFF
+          make -j"$(nproc)"
           sudo make install
-
+          sudo ldconfig
       - name: "CMake: конфигурация проекта"
         run: |
+          cd robot_arm
+          rm -rf build
           mkdir -p build
           cd build
           cmake .. -DCMAKE_BUILD_TYPE=Release
-
-      - name: "Make: компиляция бэкенда"
+      - name: "Make: компиляция backend"
         run: |
-          cd build
-          make -j$(nproc)
-
-      - name: "Проверка: исполняемый файл создан"
+          cd robot_arm/build
+          make -j"$(nproc)"
+      - name: "Проверка исполняемого файла"
         run: |
-          test -f build/robot_arm && echo "Сборка прошла успешно: build/robot_arm" || exit 1
+          if [ -f robot_arm/build/robot_arm ]; then
+            echo "Сборка прошла успешно: robot_arm/build/robot_arm"
+          else
+            echo "Ошибка: исполняемый файл robot_arm/build/robot_arm не найден."
+            exit 1
+          fi

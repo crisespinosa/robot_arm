@@ -152,10 +152,10 @@ def fig_sweep_tradeoff(runs: list, stem: str, title: str,
     except Exception:
         pass
 
-    labels  = [r["label"] for r in runs]
-    rms     = [r["rms_eq"] for r in runs]
-    energy  = [r["u_energy"] for r in runs]
-    itae    = [r["itae"] for r in runs]
+    labels = [r["label"] for r in runs]
+    rms = [r["rms_eq"] for r in runs]
+    energy = [r["u_energy"] for r in runs]
+    
 
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(11, 4.3))
     x = np.arange(len(labels))
@@ -196,16 +196,16 @@ def fig_exp4_accuracy_bars(runs: list, stem: str, title: str) -> None:
     figure that demonstrates the LQR behaves consistently across
     different goal poses.
     """
-    labels     = [r["label"] for r in runs]
-    rms        = [r["rms_eq"]     for r in runs]
-    max_eq     = [r["max_abs_eq"] for r in runs]
-    eq_fin     = [r["eq_final"]   for r in runs]
-    energy     = [r["u_energy"]   for r in runs]
+    labels = [r["label"] for r in runs]
+    rms = [r["rms_eq"]     for r in runs]
+    max_eq = [r["max_abs_eq"] for r in runs]
+    eq_fin = [r["eq_final"]   for r in runs]
+    energy = [r["u_energy"]   for r in runs]
     x = np.arange(len(labels))
 
     fig, axes = plt.subplots(2, 2, figsize=(11, 7.5))
 
-    axes[0, 0].bar(x, rms,    color="tab:blue")
+    axes[0, 0].bar(x, rms, color="tab:blue")
     axes[0, 0].set_title("RMS eq [rad]")
     axes[0, 1].bar(x, max_eq, color="tab:red")
     axes[0, 1].set_title("max |eq| [rad]")
@@ -242,7 +242,7 @@ def main() -> int:
 
     FIG_DIR.mkdir(parents=True, exist_ok=True)
 
-    # ── Exp 1: single run, full tracking + torque profile ──────────
+  
     # ── Exp 1: single run, tracking + error + torque ───────────────
     exp1 = [s for s in summaries if s["experiment"] == "exp1"]
     if exp1:
@@ -298,9 +298,7 @@ def main() -> int:
         for s in exp4:
             df = load_run(s["csv"])
             stem = f"exp4_tracking_{s['name'].replace('exp4_target_', '')}"
-            fig_tracking_grid(df,
-                              f"Exp 4 — {s['label']} (LQR baseline)",
-                              stem)
+            fig_tracking_single(df, f"Exp 4 — {s['label']} (LQR baseline)", stem)
         # Per-joint error overlay across the 3 targets.
         fig_sweep_error_grid(exp4, "exp4_errors",
                              "Exp 4 — Joint tracking error per target",
